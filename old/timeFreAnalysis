@@ -1,0 +1,5 @@
+for mass = [1,17,18]
+    for i = [1.9E+14, 2.3E+14, 8.0E+14]
+        importdata('Time'+'Mass '+string(mass)+'H2O'+'piezo'+string(i)+str('.dat'))
+    end
+end
