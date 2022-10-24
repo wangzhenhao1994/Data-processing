@@ -181,14 +181,15 @@ class FFT_ionS():
         '''
         self.stepSize = self.stepSize*rebinF
         for gas in self.phaseSpecBottleB.keys():
-            _size = self.specBigBottleB[gas].size/rebinF
+            _size = self.specBigBottleB[gas].size
             paddingSize = int(_size*paddingF)
-            _interY = np.zeros((self.phaseSpecBottleB[gas].shape[0],int(_size*(paddingF+1)/2+1)))
-            _interP = np.zeros((self.phaseSpecBottleB[gas].shape[0],int(_size*(paddingF+1)/2+1)))
+            print(paddingSize)
+            _interY = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)+1))
+            _interP = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)+1))
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
                 _,y,t = self.inter_window2(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction='left', useWindow=useWindow)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
-                if rebinF == 1:
+                if rebinF < 1.5:
                     pass
                 else:
                     y = self.rebin_factor(y,rebinF)
@@ -355,7 +356,7 @@ class FFT_ionS():
             np.arange(delay[-1]+delayStep, delay[-1] +
                       (paddingSize)*delayStep, delayStep)
         ))
-        
+        print(paddingSize)
         data = np.concatenate(
             #(np.zeros(paddingSize)+inter_data[0], inter_data, np.zeros(paddingSize)+inter_data[-1]), axis=0)
             (inter_data, (np.zeros(paddingSize))), axis=0)
@@ -1255,8 +1256,8 @@ if __name__ == '__main__':
         #d.smooth(399)
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
-        #d.show_Spectra2()
-        d.FFT3(windowSize=200, rebinF=20,paddingF = 0,useWindow=False)
+        #d.show_Spectra()
+        d.FFT3(windowSize=100, rebinF=10,paddingF = 3,useWindow=True)
         d.show_FFT()
         #d.phaseRetrive()
         
