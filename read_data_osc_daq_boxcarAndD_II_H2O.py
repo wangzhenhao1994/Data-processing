@@ -146,6 +146,8 @@ class FFT_ionS():
                     
     def interFFT(self, t, y): #https://www.researchgate.net/post/What-are-the-basic-differences-between-FFT-and-DFT-and-DCT
         n = len(y)
+        plt.plot(y)
+        plt.show()
         #y=np.roll(y,int(n/2)) #circular shift
         delta = self.stepSize
         #f = sft.fftshift(sft.fftfreq(n, delta))/ 10**12  # frequency unit THz
@@ -183,7 +185,6 @@ class FFT_ionS():
         for gas in self.phaseSpecBottleB.keys():
             _size = self.specBigBottleB[gas].size
             paddingSize = int(_size*paddingF)
-            print(paddingSize)
             _interY = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)+1))
             _interP = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)+1))
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
@@ -1257,7 +1258,7 @@ if __name__ == '__main__':
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=10,paddingF = 3,useWindow=True)
+        d.FFT3(windowSize=500, rebinF=10,paddingF = 0,useWindow=False)
         d.show_FFT()
         #d.phaseRetrive()
         
