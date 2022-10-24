@@ -1,12 +1,7 @@
-from cProfile import label
 from fileinput import filename
-from operator import xor
-from pickle import FALSE
-from certifi import where
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from sklearn import gaussian_process
 from yaml import load
 mpl.style.use('seaborn-poster')
 from matplotlib.colors import Normalize
@@ -23,14 +18,12 @@ from obspy.signal.detrend import polynomial
 import h5py
 import pathlib as pl
 import os
-from math import ceil, pi, sqrt, log 
 import pickle
 from brokenaxes import brokenaxes
 from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
-from Superlets.python.superlet import *
 
 import originpro as op
 ifsave = False
@@ -39,9 +32,7 @@ ifsavePhase = False
 if ifsave or ifsaveT or ifsavePhase:
     op.set_show(show=True)
 
-
 my_path = os.path.abspath(__file__)
-
 
 mpl.rcParams['lines.linewidth'] = 1
 plt.rcParams["font.family"] = "arial"
@@ -83,7 +74,7 @@ class FFT_ionS():
         self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\H2O\202206')
         #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
         #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\H2O\202206',folder))
+        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\Data\dataProcessing\H2O\202206',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -156,12 +147,11 @@ class FFT_ionS():
     def interFFT(self, t, y): #https://www.researchgate.net/post/What-are-the-basic-differences-between-FFT-and-DFT-and-DCT
         n = len(y)
         #y=np.roll(y,int(n/2)) #circular shift
-        delta = self.stepSize*3
+        delta = self.stepSize
         #f = sft.fftshift(sft.fftfreq(n, delta))/ 10**12  # frequency unit THz
         f = np.fft.rfftfreq(n, delta)/ 10**12  # frequency unit THz
         fft_y = np.fft.rfft(y)
         P = np.angle(fft_y)#%(2*np.pi)
-        #P = np.angle(fft_y)#%(2*np.pi)
         #P = np.arctan(fft_y.imag/fft_y.real)
         #P=np.unwrap(P)
         Y = np.abs(fft_y)
@@ -185,17 +175,24 @@ class FFT_ionS():
     #            f,Y = self.interFFT(t, y)
     #            self.fftSB[gas] = self.fftSB[gas] + Y
 
-    def FFT3(self, windowSize = 100):
+    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False):
+        '''
+        windowSize in fs, rebinF = inputShape/outputShape, padddingF means the length of the padding divided by length of the data.
+        '''
+        self.stepSize = self.stepSize*rebinF
         for gas in self.phaseSpecBottleB.keys():
-            n=0
-            paddingSize = self.specBigBottleB[gas].size*n
-            _interY = np.zeros((self.phaseSpecBottleB[gas].shape[0],2066))
-            _interP = np.zeros((self.phaseSpecBottleB[gas].shape[0],2066))
+            _size = self.specBigBottleB[gas].size/rebinF
+            paddingSize = int(_size*paddingF)
+            _interY = np.zeros((self.phaseSpecBottleB[gas].shape[0],int(_size*(paddingF+1)/2+1)))
+            _interP = np.zeros((self.phaseSpecBottleB[gas].shape[0],int(_size*(paddingF+1)/2+1)))
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
-                _,y,t = self.inter_window2(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction='left', useWindow=False)
+                _,y,t = self.inter_window2(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction='left', useWindow=useWindow)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
-                y = self.rebin_factor(y,3)
-                t = self.rebin_factor(t,3)
+                if rebinF == 1:
+                    pass
+                else:
+                    y = self.rebin_factor(y,rebinF)
+                    t = self.rebin_factor(t,rebinF)
                 #self.apply_hannwindow(self.interRmvLinear(self.phaseSpecBottleB[gas][i][-(self.specBigBottleB[gas].size-windowSize):]))
                 f, Y, P = self.interFFT(t, y)
                 _interY[i] = Y
@@ -1232,7 +1229,7 @@ if __name__ == '__main__':
     calF[r'1.4E+15_H2O'] = r'8.0E+14_H2'
     #
     #for ff in [r'7.3E+14_H2O',r'9.8E+14_H2O',r'1.2E+15_H2O']:#202208
-    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O',r'1.4E+15_H2O']:#
+    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O']:#
         #####################
         #d.specBigBottleB['Ch0'] = np.sin(np.linspace(0,1000*np.pi,13000,endpoint=False))
         #plt.plot(d.specBigBottleB['Ch0'])
@@ -1259,7 +1256,7 @@ if __name__ == '__main__':
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
         #d.show_Spectra2()
-        d.FFT3(50)
+        d.FFT3(windowSize=200, rebinF=20,paddingF = 0,useWindow=False)
         d.show_FFT()
         #d.phaseRetrive()
         
