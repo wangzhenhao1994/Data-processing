@@ -918,6 +918,23 @@ class FFT_ionS():
         f = w/(2.*np.pi)
         return popt
 
+    def fit_phase(self, tt, yy, fre):
+        '''Fit sin to the input time sequence, and return fitting parameters "amp", "omega", "phase", "offset", "freq", "period" and "fitfunc"'''
+        tt = np.array(tt)
+        yy = np.array(yy)
+        ff = np.fft.fftfreq(len(tt), (tt[1]-tt[0]))   # assume uniform spacing
+        Fyy = abs(np.fft.fft(yy))
+        guess_freq = abs(ff[np.argmax(Fyy[2:])+2])   # excluding the zero frequency "peak", which is related to offset
+        guess_amp = np.std(yy) * 2.**0.5
+        guess_offset = np.mean(yy)
+        guess = np.array([guess_amp, 2.*np.pi*fre, 0., guess_offset])
+
+        def fitFunc(t, A, w, p, c):  return A * np.sinc(w*t + p) + c
+        popt, pcov = sp.optimize.curve_fit(fitFunc, tt, yy, p0=guess)
+        A, w, p, c = popt
+        f = w/(2.*np.pi)
+        return popt
+
     def phaseRetrive2(self,omega=[526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]):
         """
         Retrieve the absolute phase
