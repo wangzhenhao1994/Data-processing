@@ -74,7 +74,7 @@ class FFT_ionS():
         self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\H2O\202206')
         #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
         #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\Data\dataProcessing\H2O\202206',folder))
+        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\Data\dataProcessing\CO2',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -146,8 +146,8 @@ class FFT_ionS():
                     
     def interFFT(self, t, y): #https://www.researchgate.net/post/What-are-the-basic-differences-between-FFT-and-DFT-and-DCT
         n = len(y)
-        plt.plot(y)
-        plt.show()
+        #plt.plot(y)
+        #plt.show()
         #y=np.roll(y,int(n/2)) #circular shift
         delta = self.stepSize
         #f = sft.fftshift(sft.fftfreq(n, delta))/ 10**12  # frequency unit THz
@@ -185,10 +185,10 @@ class FFT_ionS():
         for gas in self.phaseSpecBottleB.keys():
             _size = self.specBigBottleB[gas].size
             paddingSize = int(_size*paddingF)
-            _interY = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)+1))
-            _interP = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)+1))
+            _interY = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)))
+            _interP = np.zeros((self.phaseSpecBottleB[gas].shape[0],int((_size*(paddingF+1)/2+1)/rebinF)))
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
-                _,y,t = self.inter_window2(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction='left', useWindow=useWindow)
+                _,y,t = self.inter_window2(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction='right', useWindow=useWindow)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
                 if rebinF < 1.5:
                     pass
@@ -325,7 +325,7 @@ class FFT_ionS():
         if direction == 'left':
             window = np.where(refPos>windowSize, data, data[windowSize])
         elif direction == 'right':
-            window = np.where(refPos<(__len-windowSize), data, )
+            window = np.where(refPos<(__len-windowSize), data, data[__len-windowSize])
 
         window=polynomial(window, order=1, plot=False)
         hwindow = np.hanning(len(window))
@@ -1231,7 +1231,9 @@ if __name__ == '__main__':
     calF[r'1.4E+15_H2O'] = r'8.0E+14_H2'
     #
     #for ff in [r'7.3E+14_H2O',r'9.8E+14_H2O',r'1.2E+15_H2O']:#202208
-    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O']:#
+    #for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O']:#
+    for ff in [r'pu7.4E+13pr1.2E+15_CO2']:
+    
         #####################
         #d.specBigBottleB['Ch0'] = np.sin(np.linspace(0,1000*np.pi,13000,endpoint=False))
         #plt.plot(d.specBigBottleB['Ch0'])
@@ -1258,7 +1260,7 @@ if __name__ == '__main__':
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
         #d.show_Spectra()
-        d.FFT3(windowSize=500, rebinF=10,paddingF = 0,useWindow=False)
+        d.FFT3(windowSize=100, rebinF=1,paddingF = 0,useWindow=True)
         d.show_FFT()
         #d.phaseRetrive()
         
