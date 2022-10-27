@@ -24,6 +24,7 @@ from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
+from BaselineRemoval import BaselineRemoval
 
 import originpro as op
 ifsave = False
@@ -179,7 +180,7 @@ class FFT_ionS():
     #            f,Y = self.interFFT(t, y)
     #            self.fftSB[gas] = self.fftSB[gas] + Y
 
-    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False, zeroDirection = 'left'):
+    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False, zeroDirection = 'left', phaseCompensate = True):
         '''
         windowSize in fs, rebinF = inputShape/outputShape, padddingF means the length of the padding divided by length of the data.
         '''
@@ -187,8 +188,12 @@ class FFT_ionS():
         _size = self.specBigBottleB['Ch0'].size
         paddingSize = int(_size*paddingF)
         for gas in self.phaseSpecBottleB.keys():
+            if gas == 'Ch2' or gas == 'Ch4':
+                smooth = True
+            else:
+                smooth = False
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
-                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow)
+                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
                 if rebinF < 1.5:
                     pass
@@ -284,7 +289,7 @@ class FFT_ionS():
             else:
                 self.spectraBottleD[gas], self.spectraBottleD['window_rebin_'+gas], self.rebin_delay = self.inter_window2(self.spectraBottleD[gas], self.rebin_delay, windowSize=windowSize, direction=direction)
     
-    def inter_window(self, data, delay, windowSize=0, direction='left', useWindow = True, phaseCompensate = True):
+    def inter_window(self, data, delay, windowSize=0, direction='left', useWindow = True, phaseCompensate = True, smooth = True):
         '''
         windowSize is in fs.
         '''
@@ -305,12 +310,15 @@ class FFT_ionS():
                 data[-(__len-round((__len+windowSize)/2)+1):]
             ))
         window=polynomial(window, order=1, plot=False)
+        if smooth:
+            window=sps.savgol_filter(window, window_length=55, polyorder=3,deriv=2,delta=1)
         if useWindow:
             window2=self.apply_hannwindow(window) #https://stackoverflow.com/questions/55654699/how-to-get-correct-phase-values-using-np-fft
         else:
             window2=window
-        window2 = np.append(np.zeros(windowSize),window2,axis=0)#compensate the phase shift due to the cut
-        window = np.append(np.zeros(windowSize),window,axis=0)#compensate the phase shift due to the cut
+        if phaseCompensate:
+            window2 = np.append(np.zeros(windowSize),window2,axis=0)#compensate the phase shift due to the cut
+            window = np.append(np.zeros(windowSize),window,axis=0)#compensate the phase shift due to the cut
         return window, window2, delay
 
     def apply_hannwindow(self,y):
@@ -374,6 +382,10 @@ class FFT_ionS():
             # print(np.shape(iS))
         self.delayB = interpDelay
 
+    def baseLineRemove(self,y):
+        baseObj=BaselineRemoval(y)
+        return baseObj.ZhangFit(lambda_=1000, repitition=500)
+
     def FFTS(self):
         for gas in self.specBigBottleB.keys():
             if "rebin" not in gas:
@@ -428,7 +440,7 @@ class FFT_ionS():
         return sps.savgol_filter(data, windowSize, order)
 
     def rebin_factor(self, a, factor):
-            '''Rebin an array to a new shape.
+            '''Rebin an array to a new shape.^^
             newshape must be a factor of a.shape.
             '''
             newshape = tuple(int(i/factor) for i in a.shape)
@@ -549,13 +561,13 @@ class FFT_ionS():
             
             #Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             
-            f_window = f_window[(f_window>100)]
-            aa=f_window.shape[0]
-            bb=Y_window.shape[1]
-            Y_window = Y_window[:,bb-aa:bb]
-            Y_window_im = Y_window_im[:,bb-aa:bb]
-            Y_window_re = Y_window_re[:,bb-aa:bb]
-            P_window = P_window[:,bb-aa:bb]
+            aa = len(f_window[(f_window<50)])
+            bb=len(f_window[(f_window<4500)])
+            f_window = f_window[aa:bb+aa]
+            Y_window = Y_window[:,aa:bb+aa]
+            Y_window_im = Y_window_im[:,aa:bb+aa]
+            Y_window_re = Y_window_re[:,aa:bb+aa]
+            P_window = P_window[:,aa:bb+aa]
 
             #P_window = np.where(P_err<0.5,P_window,0)
             
@@ -587,9 +599,11 @@ class FFT_ionS():
             #Y_filter=np.where(np.logical_and(f>=10, f<=4500),Y_filter,0)/plotRatio
             #ax.plot(f,np.abs(Y), label=label)#gas)#, label=self.trueScanTime)
             #ax.plot(f,np.abs(Y_filter)/20, label='filter'+label)#gas)#, label=self.trueScanTime)
-            axF.plot(f_window, Y_window[0]/np.amax(Y_window[0]))#, label=label)
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
             axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]))#, label=label+'_re')
             axF.plot(f_window, Y_window_im[0]/np.amax(Y_window[0]))#, label=label+'_im')
+            axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
+            axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
             #ax.plot(f_rebin,np.abs(Y_rebin), label='rebin_window_'+label)#gas)#, label=self.trueScanTime)
             #ax.plot(f,np.real(Y), label="Re")#gas)#, label=self.trueScanTime)
             #ax.plot(f,np.imag(Y), label="Im")#gas)#, label=self.trueScanTime)
@@ -801,7 +815,7 @@ class FFT_ionS():
         #plt.show()
         return _shift
 
-    #def delayCorrection(self, _cRange = [300,304.5]):
+    #def delayCorrection(self, _cRange = [300,304.5]):def remo
     def delayCorrection(self, _cRange = [30,90]):
     #def delayCorrection(self, _cRange = [900,1300]):
         xxx = 0
@@ -1280,7 +1294,7 @@ if __name__ == '__main__':
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
         #d.show_Spectra()
-        d.FFT3(windowSize=200, rebinF=1,paddingF = 0, useWindow=False, zeroDirection='left')
+        d.FFT3(windowSize=100, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True)
         d.show_FFT()
         #d.phaseRetrive()
         
