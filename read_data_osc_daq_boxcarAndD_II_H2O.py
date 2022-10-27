@@ -179,7 +179,7 @@ class FFT_ionS():
     #            f,Y = self.interFFT(t, y)
     #            self.fftSB[gas] = self.fftSB[gas] + Y
 
-    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False):
+    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False, zeroDirection = 'left'):
         '''
         windowSize in fs, rebinF = inputShape/outputShape, padddingF means the length of the padding divided by length of the data.
         '''
@@ -188,7 +188,7 @@ class FFT_ionS():
         paddingSize = int(_size*paddingF)
         for gas in self.phaseSpecBottleB.keys():
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
-                _,y,t = self.inter_window2(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction='right', useWindow=useWindow)
+                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
                 if rebinF < 1.5:
                     pass
@@ -284,7 +284,7 @@ class FFT_ionS():
             else:
                 self.spectraBottleD[gas], self.spectraBottleD['window_rebin_'+gas], self.rebin_delay = self.inter_window2(self.spectraBottleD[gas], self.rebin_delay, windowSize=windowSize, direction=direction)
     
-    def inter_window(self, data, delay, windowSize=0, direction='left', useWindow = True):
+    def inter_window(self, data, delay, windowSize=0, direction='left', useWindow = True, phaseCompensate = True):
         '''
         windowSize is in fs.
         '''
@@ -304,13 +304,13 @@ class FFT_ionS():
                  data[round((__len+windowSize)/2)])/2*(np.zeros(windowSize)+1),
                 data[-(__len-round((__len+windowSize)/2)+1):]
             ))
-        window=polynomial(window, order=0, plot=False)
+        window=polynomial(window, order=1, plot=False)
         if useWindow:
             window2=self.apply_hannwindow(window) #https://stackoverflow.com/questions/55654699/how-to-get-correct-phase-values-using-np-fft
         else:
             window2=window
-        window2 = np.append(np.zeros(windowSize),window2,axis=0)
-        window = np.append(np.zeros(windowSize),window,axis=0)
+        window2 = np.append(np.zeros(windowSize),window2,axis=0)#compensate the phase shift due to the cut
+        window = np.append(np.zeros(windowSize),window,axis=0)#compensate the phase shift due to the cut
         return window, window2, delay
 
     def apply_hannwindow(self,y):
@@ -323,13 +323,13 @@ class FFT_ionS():
         '''
         __len = np.size(data)
         windowSize = int(windowSize*1e-15/self.stepSize)
-        refPos = np.arange(np.size(self.delayB))
+        refPos = np.arange(__len)
         if direction == 'left':
             window = np.where(refPos>windowSize, data, data[windowSize])
         elif direction == 'right':
             window = np.where(refPos<(__len-windowSize), data, data[__len-windowSize])
 
-        window=polynomial(window, order=5, plot=False)
+        window=polynomial(window, order=1, plot=False)
         hwindow = np.hanning(len(window))
         if useWindow:
             window2=window*hwindow #https://stackoverflow.com/questions/55654699/how-to-get-correct-phase-values-using-np-fft
@@ -587,9 +587,9 @@ class FFT_ionS():
             #Y_filter=np.where(np.logical_and(f>=10, f<=4500),Y_filter,0)/plotRatio
             #ax.plot(f,np.abs(Y), label=label)#gas)#, label=self.trueScanTime)
             #ax.plot(f,np.abs(Y_filter)/20, label='filter'+label)#gas)#, label=self.trueScanTime)
-            axF.plot(f_window, Y_window[0]/np.amax(Y_window[0]), label=label)
-            axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]), label=label+'_re')
-            axF.plot(f_window, Y_window_im[0]/np.amax(Y_window[0]), label=label+'_im')
+            axF.plot(f_window, Y_window[0]/np.amax(Y_window[0]))#, label=label)
+            axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]))#, label=label+'_re')
+            axF.plot(f_window, Y_window_im[0]/np.amax(Y_window[0]))#, label=label+'_im')
             #ax.plot(f_rebin,np.abs(Y_rebin), label='rebin_window_'+label)#gas)#, label=self.trueScanTime)
             #ax.plot(f,np.real(Y), label="Re")#gas)#, label=self.trueScanTime)
             #ax.plot(f,np.imag(Y), label="Im")#gas)#, label=self.trueScanTime)
@@ -1251,7 +1251,7 @@ if __name__ == '__main__':
     calF[r'1.4E+15_H2O'] = r'8.0E+14_H2'
     #
     #for ff in [r'7.3E+14_H2O',r'9.8E+14_H2O',r'1.2E+15_H2O']:#202208
-    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O']:#
+    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O',r'1.4E+15_H2O']:#
     #for ff in [r'pu7.4E+13pr1.2E+15_CO2']:
     
         #####################
@@ -1280,7 +1280,7 @@ if __name__ == '__main__':
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=1,paddingF = 10,useWindow=True)
+        d.FFT3(windowSize=200, rebinF=1,paddingF = 0, useWindow=False, zeroDirection='left')
         d.show_FFT()
         #d.phaseRetrive()
         
