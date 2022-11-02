@@ -562,15 +562,15 @@ class FFT_ionS():
             f_window = f_window# 
             #Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             
-            aa = len(f_window[(f_window<3600)])
-            bb=len(f_window[(f_window<3700)])
+            aa = len(f_window[(f_window<100)])
+            bb=len(f_window[(f_window<3800)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
+            #self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
             #[526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]
             #P_window = np.where(P_err<0.5,P_window,0)
             
@@ -960,10 +960,10 @@ class FFT_ionS():
 
         # create a set of Parameters
         params = Parameters()
-        params.add('amp', value= 1) #value is the initial condition
+        params.add('amp', value= 1, min=0) #value is the initial condition
         params.add('phi', value= np.pi, min=0, max=np.pi*2)
-        params.add('w0', value= 3655.5, min=3640, max=3670)
-        params.add('n', value= 100, min=90) #min=0 prevents that d becomes negative
+        params.add('w0', value= 3655.5, min=3646, max=3665)
+        params.add('n', value= 100, min=0, max=150) #min=0 prevents that d becomes negative
 
         # do fit, here with leastsq model
         result = minimize(fitFunc, params, args=(x,y))
