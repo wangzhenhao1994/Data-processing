@@ -1,4 +1,4 @@
 {
     "python.pythonPath": "C:\\ProgramData\\Anaconda3\\envs\\data\\python.exe",
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "off"
 }
