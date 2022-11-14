@@ -189,7 +189,7 @@ class FFT_ionS():
         paddingSize = int(_size*paddingF)
         for gas in self.phaseSpecBottleB.keys():
             if 1:#gas == 'Ch2' or gas == 'Ch4':
-                smooth = True
+                smooth = False
             else:
                 smooth = False
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
@@ -297,7 +297,7 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            data=sps.savgol_filter(data, window_length=3, polyorder=1,deriv=1,delta=1, mode='interp')
+            data=sps.savgol_filter(data, window_length=9, polyorder=1,deriv=1,delta=1, mode='interp')
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -330,26 +330,6 @@ class FFT_ionS():
     def apply_hammwindow(self,y):
         hwindow = np.hamming(len(y))
         return y*hwindow
-
-    def inter_window2(self, data, delay, windowSize=0, direction='left', useWindow = True):
-        '''
-        windowSize is in fs. Replace the window with the amplitude after the window.
-        '''
-        __len = np.size(data)
-        windowSize = int(windowSize*1e-15/self.stepSize)
-        refPos = np.arange(__len)
-        if direction == 'left':
-            window = np.where(refPos>windowSize, data, data[windowSize])
-        elif direction == 'right':
-            window = np.where(refPos<(__len-windowSize), data, data[__len-windowSize])
-
-        window=polynomial(window, order=1, plot=False)
-        hwindow = np.hanning(len(window))
-        if useWindow:
-            window2=window*hwindow #https://stackoverflow.com/questions/55654699/how-to-get-correct-phase-values-using-np-fft
-        else:
-            window2=window
-        return window, window2, delay
 
     def padding(self, paddingSize=0):
         for gas in list(self.specBigBottleB):
@@ -561,13 +541,15 @@ class FFT_ionS():
             _preP = 'window'+'_'
             Y = np.array([np.mean(self.fftSB[_preP+gas+'_fft'],axis=0), np.std(self.fftSB[_preP+gas+'_fft'],axis=0)])
             Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
+            Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
             P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
-            P_window =  np.array([np.mean(np.where(P_inter<0,P_inter+np.pi,P_inter),axis=0), np.std(np.angle(self.fftSB[_preP+gas+'_fft']),axis=0)])
+            P_inter = np.unwrap(np.where(P_inter<0,P_inter+np.pi,P_inter))
+            P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             f_window = self.fftSB[_preP+'fre']
             f_window = f_window# 
-            Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
+            
             
             aa = len(f_window[(f_window<100)])
             bb=len(f_window[(f_window<4000)])
@@ -577,15 +559,12 @@ class FFT_ionS():
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
-            #axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]))#, label=label+'_re')
-            #axF.plot(f_window, Y_window_im[0]/np.amax(Y_window[0]))#, label=label+'_im')
+            #axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
+            axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]))#, label=label+'_re')
+            axF.plot(f_window, Y_window_im[0]/np.amax(Y_window[0]))#, label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
             #axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
-            #ax.plot(f_rebin,np.abs(Y_rebin), label='rebin_window_'+label)#gas)#, label=self.trueScanTime)
-            #ax.plot(f,np.real(Y), label="Re")#gas)#, label=self.trueScanTime)
-            #ax.plot(f,np.imag(Y), label="Im")#gas)#, label=self.trueScanTime)
-            axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
+            #axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
             #plot(f_window,P_window,'r')
             #axF.set_ylim([0,1])
             #axF.set_xlim([200,4500])
@@ -1274,7 +1253,7 @@ if __name__ == '__main__':
     calF[r'1.4E+15_H2O'] = r'8.0E+14_H2'
     #
     #for ff in [r'7.3E+14_H2O',r'9.8E+14_H2O',r'1.2E+15_H2O']:#202208
-    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O',r'1.4E+15_H2O']:#
+    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O']:#
     #for ff in [r'pu7.4E+13pr1.2E+15_CO2']:
     
         #####################
@@ -1303,7 +1282,7 @@ if __name__ == '__main__':
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=1,paddingF = 1, useWindow=True, zeroDirection='left', phaseCompensate=True)
+        d.FFT3(windowSize=100, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True)
         d.show_FFT()
         #d.phaseRetrive()
         
