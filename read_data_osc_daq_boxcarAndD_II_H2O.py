@@ -1193,5 +1193,5 @@ if __name__ == '__main__':
         d.transition()
         d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=1, paddingF=5, useWindow=True, zeroDirection='left', phaseCompensate=True)
+        d.FFT3(windowSize=100, rebinF=1, paddingF=1, useWindow=True, zeroDirection='left', phaseCompensate=True)
         d.show_FFT()
