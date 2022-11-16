@@ -688,7 +688,8 @@ if __name__ == '__main__':
     ####################################################################################################################
     f00 = FFT_ionS(filename=f00, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(260,8,5),ChN=11)#260-250
 
-    ff=[f0,f1,f2]
+    ff=[f0,f1,f2]#
+    ff=[38,48,53]
     for x in ff:
         x.pathFinder()
         print(x.filepath)
