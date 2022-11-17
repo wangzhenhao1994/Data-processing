@@ -169,7 +169,8 @@ class FFT_ionS():
         paddingSize = int(_size*paddingF)
         for gas in self.phaseSpecBottleB.keys():
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
-                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+                #_,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
                 if rebinF < 1.5:
                     pass
@@ -335,8 +336,8 @@ class FFT_ionS():
                       (paddingSize)*delayStep, delayStep)
         ))
         data = np.concatenate(
-            #(np.zeros(paddingSize),inter_data, np.zeros(paddingSize)), axis=0)
-            (inter_data, np.zeros(paddingSize)), axis=0)
+            (np.zeros(paddingSize),inter_data, np.zeros(paddingSize)), axis=0)
+            #(inter_data, np.zeros(paddingSize)), axis=0)
         delay = delay[:len(data)]
         return data, delay
 
@@ -491,9 +492,9 @@ class FFT_ionS():
         return zeroIndex
     
     def phaseCorrection(self,spectra):
-        L=2**int(math.log2((self.zeroIndex+1)))
-        startIndex=self.zeroIndex-L
-        interSpectra = spectra[startIndex:startIndex+L*2]
+        interSpectra = spectra[self.zeroIndex*2+1]
+        f,Y=self.interFFT(interSpectra)
+
 
     def show_FFT(self):
         self.dcRange=0
@@ -543,12 +544,12 @@ class FFT_ionS():
             P_window = P_window[:,aa:bb]
 
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            #axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
-            axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
-            axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
+            #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
+            #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
             #axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
-            #axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
+            axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
             #plot(f_window,P_window,'r')
             #axF.set_ylim([0,1])
             #axF.set_xlim([200,4500])
@@ -1214,7 +1215,7 @@ if __name__ == '__main__':
             d.read()
             d.delayCorrection()
         d.transition()
-        d.findZeroDelay3()
+        #d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=1, paddingF=2, useWindow=True, zeroDirection='left', phaseCompensate=True,smooth=False)
+        d.FFT3(windowSize=0, rebinF=1, paddingF=2, useWindow=True, zeroDirection='left', phaseCompensate=True,smooth=False)
         d.show_FFT()
