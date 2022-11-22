@@ -20,8 +20,6 @@ import h5py
 import pathlib as pl
 import os
 import pickle
-from brokenaxes import brokenaxes
-from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
@@ -76,7 +74,7 @@ class FFT_ionS():
         self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\H2O\202206')
         #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
         #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\Data\dataProcessing\H2O\202206',folder))
+        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\Data_newTOF\dataProcessing\H2O\202206',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -562,15 +560,15 @@ class FFT_ionS():
             f_window = f_window# 
             #Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             
-            aa = len(f_window[(f_window<100)])
-            bb=len(f_window[(f_window<3800)])
+            aa = len(f_window[(f_window<3550)])
+            bb=len(f_window[(f_window<3750)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            #self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
+            self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
             #[526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]
             #P_window = np.where(P_err<0.5,P_window,0)
             
@@ -953,17 +951,19 @@ class FFT_ionS():
             phi = params['phi'].value
             w0 = params['w0'].value
             n = params['n'].value
-            model = amp*np.sinc(np.pi*(x-w0)/self.dw*n)*np.exp(1j*(np.pi*(x-w0)/self.dw*n+phi))
+            n2 = params['n2'].value
+            model = amp*np.sinc(np.pi*(x-w0)/self.dw)*np.exp(1j*(np.pi*(x-w0)/self.dw+phi))
 
             res=model-data
             return res.view(float)#np.abs(model - data) #that's what you want to minimize
 
         # create a set of Parameters
         params = Parameters()
-        params.add('amp', value= 1, min=0) #value is the initial condition
+        params.add('amp', value= 3600, min=0) #value is the initial condition
         params.add('phi', value= np.pi, min=0, max=np.pi*2)
-        params.add('w0', value= 3655.5, min=3646, max=3665)
-        params.add('n', value= 100, min=0, max=150) #min=0 prevents that d becomes negative
+        params.add('w0', value= 3651, min=3650, max=3656)
+        params.add('n', value= 100, min=0, max=150)
+        params.add('n2', value= 100, min=0, max=150)
 
         # do fit, here with leastsq model
         result = minimize(fitFunc, params, args=(x,y))
@@ -976,8 +976,8 @@ class FFT_ionS():
 
         plt.plot(x, np.real(y))
         plt.plot(x, np.real(final), 'r')
-        plt.plot(x, np.imag(y))
-        plt.plot(x, np.imag(final), 'b')
+        #plt.plot(x, np.imag(y))
+        #plt.plot(x, np.imag(final), 'b')
         plt.show()
 
     def phaseRetrive2(self,omega=[526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]):
@@ -1325,7 +1325,7 @@ if __name__ == '__main__':
         #d.rmvExp()
         #d.useFilter(10/33.35641*1e12, 6000/33.35641*1e12)
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=1,paddingF = 30, useWindow=True, zeroDirection='left', phaseCompensate=True)
+        d.FFT3(windowSize=300, rebinF=1,paddingF =0, useWindow=False, zeroDirection='left', phaseCompensate=True)
         d.show_FFT()
         #d.phaseRetrive()
         
