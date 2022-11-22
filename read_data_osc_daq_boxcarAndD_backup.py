@@ -73,7 +73,7 @@ class FFT_ionS():
         '''
         self.filename = filename
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF')
+        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\Data')
         self.scanTime = scanTime
         self.trueScanTime = ceil(self.scanTime/1.6)*1.6
         self.scanLengthB = 3360
@@ -533,9 +533,9 @@ class FFT_ionS():
 
     def show_FFT(self):
         self.dcRange=0
-        gs = gridspec.GridSpec(2, 5)
+        gs = gridspec.GridSpec(2, 3)
         fig = plt.figure(figsize=(15,5))
-        lab=['Mass 1','Mass 2','Mass 16','Mass 17','Mass 18','Mass 1+17','Mass 1-17','Mass 17+18','Mass 17-18']
+        lab=['Mass 1','Mass 2','Mass 28','Mass 29','Mass 30','']
         #threshold=[0,0,0,0.1,0]#one hour measurement
         #height=[1,0.5,0.5,3,30]
         #threshold=[0.1,0,0,0,0]
@@ -1019,7 +1019,7 @@ if __name__ == '__main__':
     f47 = [r'scan_tof_2022-06-05-15-07-15',r'scan_tof_2022-06-05-13-10-09']
     f48 = [r'scan_tof_2022-07-01-07-53-13',r'scan_tof_2022-06-21-18-10-59',r'scan_tof_2022-06-22-19-24-23',r'scan_tof_2022-06-23-10-09-03',r'scan_tof_2022-06-23-11-48-23',r'scan_tof_2022-06-27-19-55-38',r'scan_tof_2022-06-28-15-47-53',r'scan_tof_2022-06-28-19-18-27',r'scan_tof_2022-06-29-12-09-27',r'scan_tof_2022-06-29-15-28-34',r'scan_tof_2022-07-01-07-53-13']#200-200
     #r'scan_tof_2022-08-26-11-24-19'
-    ftest = [r'scan_tof_2022-10-05-19-10-01']#
+    ftest = [r'scan_tof_2022-10-11-18-50-19']#
     #[]
     
     fall = f1+f2+f3+f4+f5+f6+f7+f8+f9+f10+f11+f12+f13+f14+f15+f16+f17+f18+f19+f20+f21+f22+f23+f24+f25+f26+f27+f28+f29+f30+f31+f32+f33+f34+f35+f36+f37+f38+f39+f43+f44+f45+f46+ftest
@@ -1120,7 +1120,7 @@ if __name__ == '__main__':
         #x.useFilter(100/33.35641*1e12, 6000/33.35641*1e12, comFre=[4100,4200])
 
         
-        x.window(windowSize=200, direction='left')
+        x.window(windowSize=200, direction='right')
         ##x.smooth(windowSize=9)
         #x.show_Spectra()
         #plt.show()
