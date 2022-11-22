@@ -168,8 +168,8 @@ class FFT_ionS():
         paddingSize = int(_size*paddingF)
         for gas in self.phaseSpecBottleB.keys():
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
-                #_,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
-                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+                #_,y,t = self.inter_window(self.phaseSpecBottleB[gas][i],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
                 if rebinF < 1.5:
                     pass
@@ -1241,7 +1241,7 @@ if __name__ == '__main__':
             d.read()
             d.delayCorrection()
         d.transition()
-        #d.findZeroDelay3()
+        d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=1,paddingF = 1, useWindow=True, zeroDirection='left', phaseCompensate=True)
+        d.FFT3(windowSize=90, rebinF=1,paddingF = 1, useWindow=True, zeroDirection='left', phaseCompensate=True)
         d.show_FFT()
