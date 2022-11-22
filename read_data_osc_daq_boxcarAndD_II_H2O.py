@@ -72,10 +72,10 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\H2O\202206')
+        self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing\H2O\202206')
         #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
         #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\Data_newTOF\dataProcessing\H2O\202206',folder))
+        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\H2O\202206',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -149,6 +149,7 @@ class FFT_ionS():
         n = len(y)
         delta = self.stepSize#/(self.interNum+1)
         self.dw = 1/((n)*self.stepSize)/1E12*33.35641
+        y = np.roll(y,int(n/2))
         f = np.fft.rfftfreq(n, delta)/1E12*33.35641  # frequency unit cm-1
         fft_y = np.fft.rfft(y)
         return f, fft_y
@@ -529,7 +530,7 @@ class FFT_ionS():
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
             P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
-            P_inter = np.unwrap(np.where(P_inter<0,P_inter+np.pi,P_inter))
+            P_inter = np.where(P_inter<0,P_inter+2*np.pi,P_inter)
             P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
 
             aa = len(f_window[(f_window<100)])
@@ -570,10 +571,8 @@ class FFT_ionS():
             # for f in [526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]],0)
             #P_window = np.where(Y_window>0.02,P_window,0)
             #Y_filter=np.where(np.logical_and(f>=10, f<=4500),Y_filter,0)/plotRatio
-            #ax.plot(f,np.abs(Y), label=label)#gas)#, label=self.trueScanTime)
-            #ax.plot(f,np.abs(Y_filter)/20, label='filter'+label)#gas)#, label=self.trueScanTime)
-            #axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
-            axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]))#, label=label+'_re')
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
+            #axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]))#, label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/np.amax(Y_window[0]))#, label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
             #axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
@@ -1244,5 +1243,5 @@ if __name__ == '__main__':
         d.transition()
         #d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=100, rebinF=1,paddingF = 30, useWindow=True, zeroDirection='left', phaseCompensate=True)
+        d.FFT3(windowSize=100, rebinF=1,paddingF = 1, useWindow=True, zeroDirection='left', phaseCompensate=True)
         d.show_FFT()
