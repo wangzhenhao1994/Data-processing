@@ -20,14 +20,13 @@ import h5py
 import pathlib as pl
 import os
 import pickle
-from brokenaxes import brokenaxes
-from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
 from BaselineRemoval import BaselineRemoval
 from lmfit import minimize, Parameters, Parameter, report_fit
 import originpro as op
+
 ifsave = False
 ifsaveT = False
 ifsavePhase = False
@@ -74,10 +73,10 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\H2O\202206')
+        self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing\H2O\202206')
         #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
         #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\Data\dataProcessing\H2O\202206',folder))
+        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\H2O\202206',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -151,8 +150,14 @@ class FFT_ionS():
         n = len(y)
         delta = self.stepSize#/(self.interNum+1)
         self.dw = 1/((n)*self.stepSize)/1E12*33.35641
-        f = np.fft.rfftfreq(n, delta)/1E12*33.35641  # frequency unit cm-1
-        fft_y = np.fft.rfft(y)
+        f = np.fft.fftfreq(n, delta)/1E12*33.35641  # frequency unit cm-1
+        f = f[f>0]
+        #y=np.fft.fftshift(y)
+        #plt.plot(y)
+        #plt.show()
+        fft_y = np.fft.fft(y)
+        #fft_y = fft_y*np.exp(1j*2*np.pi/n*int(3500+self.windowSize)*np.arange(n))#5415,
+        fft_y=fft_y[:np.size(f)]
         return f, fft_y
 
     def FFT(self):
@@ -160,18 +165,24 @@ class FFT_ionS():
             y,t = self.inter_padding(self.specBigBottleB[gas],self.delayB,paddingSize=np.size(self.specBigBottleB[gas])*2)
             self.fftSB[gas] = self.interFFT(t, y)
 
-    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False, zeroDirection = 'left', phaseCompensate = True, smooth=True):
+    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False, zeroDirection = 'left', phaseCompensate = True, smooth=True, test=False):
         '''
         windowSize in fs, rebinF = inputShape/outputShape, padddingF means the length of the padding divided by length of the data.
         '''
         self.stepSize = self.stepSize*rebinF
         _size = self.specBigBottleB['Ch0'].size
         paddingSize = int(_size*paddingF)
+        self.paddingSize = paddingSize
         for gas in self.phaseSpecBottleB.keys():
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
                 _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 #_,y,t = self.inter_window(self.phaseSpecBottleB[gas][i],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
+                if test:
+                    y=np.sin(2*np.pi/300*np.arange(np.size(t)))+np.sin(2*np.pi/100*np.arange(np.size(t))+np.pi)+np.sin(2*np.pi/200*np.arange(np.size(t)))
+                    y,t = self.inter_padding(y,t,paddingSize=paddingSize)
+                #plt.plot(t,y)
+                #plt.show()
                 if rebinF < 1.5:
                     pass
                 else:
@@ -264,6 +275,7 @@ class FFT_ionS():
         '''
         windowSize is in fs.
         '''
+        data = data[:int(np.size(data)/2)*2]
         __len = np.size(data)
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
@@ -336,8 +348,8 @@ class FFT_ionS():
                       (paddingSize)*delayStep, delayStep)
         ))
         data = np.concatenate(
-            #(np.zeros(paddingSize),inter_data, np.zeros(paddingSize)), axis=0)
-            (inter_data, np.zeros(paddingSize)), axis=0)
+            (np.zeros(paddingSize),inter_data, np.zeros(paddingSize)), axis=0)
+            #(inter_data, np.zeros(paddingSize)), axis=0)
         delay = delay[:len(data)]
         return data, delay
 
@@ -514,38 +526,39 @@ class FFT_ionS():
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel("Frequency ($\mathrm{cm^{-1}}$)")
         plt.ylabel("Amplitude (a.u.)", labelpad=25)
-        plt.text(1.1,0.38,'Phase (rad)', rotation = 90)
+        plt.text(1.1,0.38,'Phase ($\pi$)', rotation = 90)
         axPP = []
         for axx in ax.flatten():
             axPP = axPP + [axx.twinx()]
         axPP[0].get_shared_y_axes().join(axPP[0], axPP[1],axPP[2])
 
-        lab=['Mass 1','Mass 2','Mass 16','Mass 17','Mass 18']
+        lab=['Mass 18','Mass 1','Mass 2','Mass 16','Mass 17']
         i=0
         if ifsave:
             self.wks = op.new_sheet('w',lname=str('FFT')+str('_')+self.folder)
-        for gas in self.fftSB.keys():
+
+        _preP = 'window'+'_'
+        for gas in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
             if 'filter' in gas  or 'window' in gas or 'rebin' in gas or 'com' in gas:
                 continue
-            elif gas not in ['Ch0','Ch2','Ch4','Ch6','Ch8']:
+            elif gas not in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
                 continue
             
             axF=ax[int(i/3),i%3]
             axP = axPP[i]
             #axP.set_ylim([-np.pi,np.pi])
             label=lab[i]
-            _preP = 'window'+'_'
             f_window = self.fftSB[_preP+'fre']
             Y = np.array([np.mean(self.fftSB[_preP+gas+'_fft'],axis=0), np.std(self.fftSB[_preP+gas+'_fft'],axis=0)])
             Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
-            P_inter = np.arctan2(np.imag(self.fftSB[_preP+gas+'_fft']),np.real(self.fftSB[_preP+gas+'_fft']))
-            P_inter = np.where(Y_window_re[0]<0,P_inter,P_inter)
-            #P_inter = np.where(P_inter<0,P_inter+2*np.pi,P_inter)
+            P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
+            P_inter = np.unwrap(np.where(P_inter<0,P_inter+np.pi,P_inter))
             P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
 
+            
             aa = len(f_window[(f_window<100)])
             bb=len(f_window[(f_window<4000)])
             f_window = f_window[aa:bb]
@@ -556,15 +569,19 @@ class FFT_ionS():
             P_window = P_window[:,aa:bb]
 
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            #axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
-            axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
+            #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
             #axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
-            axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
+            if gas == 'Ch8':
+                pass
+            else:
+                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
             #plot(f_window,P_window,'r')
             #axF.set_ylim([0,1])
             #axF.set_xlim([200,4500])
+            axP.set_ylim([-0.5,2.5])
             axF.legend(loc=2,ncol=2)
             i=i+1
             if ifsave:
@@ -883,18 +900,17 @@ class FFT_ionS():
             phi = params['phi'].value
             w0 = params['w0'].value
             n = params['n'].value
-            n2 = params['n2'].value
-            model = amp*np.sinc(np.pi*(x-w0)/self.dw*n)*np.exp(1j*(np.pi*(x-w0)/self.dw*n2+phi))
+            model = amp*np.sinc(np.pi*(x-w0)/self.dw*n)*np.exp(1j*(np.pi*(x-w0)/self.dw*n+phi))
+
             res=model-data
             return res.view(float)#that's what you want to minimize
 
         # create a set of Parameters
         params = Parameters()
-        params.add('amp', value= 1, min=0, max=1E5) #value is the initial condition
+        params.add('amp', value= 1, min=0) #value is the initial condition
         params.add('phi', value= np.pi, min=0, max=np.pi*2)
         params.add('w0', value= 3655.5, min=3646, max=3665)
-        params.add('n', value= 100, min=0)
-        params.add('n2', value= 100, min=0) 
+        params.add('n', value= 100, min=0, max=150) #min=0 prevents that d becomes negative
 
         # do fit, here with leastsq model
         result = minimize(fitFunc, params, args=(x,y))
@@ -907,8 +923,8 @@ class FFT_ionS():
 
         plt.plot(x, np.real(y))
         plt.plot(x, np.real(final), 'r')
-        plt.plot(x, np.imag(y))
-        plt.plot(x, np.imag(final), 'b')
+        #plt.plot(x, np.imag(y))
+        #plt.plot(x, np.imag(final), 'b')
         plt.show()
         return final
 
@@ -1227,7 +1243,7 @@ if __name__ == '__main__':
             d.read()
             d.delayCorrection()
         d.transition()
-        d.findZeroDelay3()
+        #d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=90, rebinF=1, paddingF=3, useWindow=True, zeroDirection='left', phaseCompensate=False,smooth=False)
+        d.FFT3(windowSize=0, rebinF=1, paddingF=2, useWindow=True, zeroDirection='left', phaseCompensate=True,smooth=False)
         d.show_FFT()
