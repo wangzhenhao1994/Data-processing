@@ -152,7 +152,7 @@ class FFT_ionS():
         self.dw = 1/((n)*self.stepSize)/1E12*33.35641
         f = np.fft.fftfreq(n, delta)/1E12*33.35641  # frequency unit cm-1
         f = f[f>0]
-        #y=np.fft.fftshift(y)
+        y=np.fft.fftshift(y)
         #plt.plot(y)
         #plt.show()
         fft_y = np.fft.fft(y)
@@ -291,7 +291,7 @@ class FFT_ionS():
                  data[round((__len+windowSize)/2)])/2*(np.zeros(windowSize)+1),
                 data[-(__len-round((__len+windowSize)/2)+1):]
             ))
-        window=polynomial(window, order=3, plot=False)
+        window=polynomial(window, order=1, plot=False)
         window = window - window[-1]#shift the base line to zero
 
         #if not math.log2(np.size(window)).is_integer():
@@ -554,20 +554,26 @@ class FFT_ionS():
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
             P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
-            P_inter = np.unwrap(np.where(P_inter<0,P_inter+np.pi,P_inter))
-            P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
+            if gas == 'Ch8':
+                P_ref = P_inter
+                P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
+            else:
+                P_inter = P_inter-P_ref
+                P_window =  np.array([np.mean(P_inter+0.2,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
 
             
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
-            aa = len(f_window[(f_window<3500)])
-            bb=len(f_window[(f_window<3810)])
+            aa = len(f_window[(f_window<100)])
+            bb=len(f_window[(f_window<4150)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
+            P_window[0]=np.where(P_window[0]<0,P_window[0]+2*np.pi,P_window[0])
+            P_window = P_window/np.pi
 
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
             axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
@@ -1295,16 +1301,16 @@ if __name__ == '__main__':
             d.read()
             d.delayCorrection()
         d.transition()
-        #d.findZeroDelay3()
+        d.findZeroDelay3()
         #d.show_Spectra()
-        #d.FFT3(windowSize=90, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
-        #d.show_FFT()
+        d.FFT3(windowSize=90, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
+        d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)
-        d.rebinS(5)
-        d.window(windowSize=200,useWindow=False)
-        d.STFTS(gas='rebin_Ch8',windowsize=400)
-        d.STFTS(gas='rebin_Ch0',windowsize=400)
+        #d.rebinS(5)
+        #d.window(windowSize=200,useWindow=False)
+        #d.STFTS(gas='rebin_Ch8',windowsize=400)
+        #d.STFTS(gas='rebin_Ch0',windowsize=400)
         #angle8=np.angle(d.stftSB['rebin_Ch8'])
         #angle0=np.angle(d.stftSB['rebin_Ch0'])
