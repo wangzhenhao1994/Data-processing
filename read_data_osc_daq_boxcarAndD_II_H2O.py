@@ -347,7 +347,6 @@ class FFT_ionS():
         data = np.concatenate(
             (np.zeros(paddingSize),inter_data, np.zeros(paddingSize)), axis=0)
             #(inter_data, np.zeros(paddingSize)), axis=0)
-            #(np.zeros(paddingSize),inter_data), axis=0)
         delay = delay[:len(data)]
         return data, delay
 
@@ -399,10 +398,10 @@ class FFT_ionS():
             self.specBigBottleB[gas] = self.interRmvLinear(self.specBigBottleB[gas])
 
     def interRmvLinear(self,y):
-        a = np.array([[self.delayB[0], 1], [self.delayB[-1], 1]])
+        a = np.array([[0, 1], [np.size(y), 1]])
         b = np.array([y[0],y[-1]])
         [k, b] = np.linalg.solve(a, b)
-        return y-(k*self.delayB+b)
+        return y-(k*np.arange(np.size(y))+b)
 
     def runingAverage(self, n=5):
         def runAve(x, N): return np.convolve(x, np.ones(N)/N, mode='valid')
@@ -504,8 +503,19 @@ class FFT_ionS():
         return zeroIndex
     
     def phaseCorrection(self,spectra):
-        interSpectra = spectra[self.zeroIndex*2+1]
-        f,Y=self.interFFT(interSpectra)
+        spectra = self.interRmvLinear(spectra)
+        interSpectra =spectra[:(self.zeroIndex*2)]
+        L=np.size(spectra)-(self.zeroIndex*2)
+        padded=np.concatenate((interSpectra[self.zeroIndex:self.zeroIndex*2],np.zeros(L),interSpectra[:self.zeroIndex]))
+        Y=sp.fft.fft(padded)
+        #plt.plot(np.unwrap(np.arctan(np.imag(Y)/np.real(Y))))
+        #plt.show()
+        F = sp.fft.idct(np.cos(np.unwrap(np.arctan(np.imag(Y)/np.real(Y)))),type=2,norm=None)+sp.fft.idst(np.sin(np.unwrap(np.arctan(np.imag(Y)/np.real(Y)))),type=2,norm=None)
+        b=np.convolve(F,spectra)
+        plt.plot(b)
+        plt.show()
+        #P_inter = np.unwrap(np.where(P_inter<0,P_inter+np.pi,P_inter))
+        return b
 
 
     def show_FFT(self):
@@ -544,10 +554,7 @@ class FFT_ionS():
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
             P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
-            P_inter = np.where(P_inter<0,P_inter+2*np.pi,P_inter)###########################
-            if gas =='Ch8':
-                refPhase = P_inter
-            P_inter =P_inter-refPhase
+            P_inter = np.unwrap(np.where(P_inter<0,P_inter+np.pi,P_inter))
             P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
 
             
@@ -562,42 +569,10 @@ class FFT_ionS():
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
 
-            P_window[0]=np.where(P_window[0]+0.2<0,P_window[0]+2*np.pi,P_window[0])
-            P_window = P_window/np.pi
-            #P_window[0]=P_window[0]-phaseShift
-            #self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            #[526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]
-            #P_window = np.where(P_err<0.5,P_window,0)
-            
-            #if gas=='Ch2':
-            #    Y_window=Y_window/np.amax(Y_window[-np.size(f_window[(f_window>4000)]):])
-            #    [f_window_H2, Y_window_H2] = self.fftSB_H2[_preP+'Ch2']
-            #    
-            #    Y_window_1=np.where(f_window<1880,Y_window,0)
-            #    Y_window_1=np.where(f_window>1640,Y_window_1,0)
-            #    Y_window_1_max=np.amax(Y_window_1)
-            #    Y_window_2=np.where(f_window>4000,Y_window,0)
-            #    Y_window_2_max=np.amax(Y_window_2)
-            #    
-            #    Y_window_H2 = Y_window_H2[bb:bb]
-            #    Y_window_H2_1=np.where(f_window>1100,Y_window_H2,0)
-            #    Y_window_H2_1=np.where(f_window<2500,Y_window_H2_1,0)
-            #    Y_window_H2_1_max=np.amax(Y_window_H2_1)
-            #    Y_window_H2_2=np.where(f_window>4000,Y_window_H2,0)
-            #    Y_window_H2_2_max=np.amax(Y_window_H2_2)
-            #    
-#
-            #    Y_window = np.where(f_window<4000,Y_window,0)-np.where(f_window<4000,Y_window_H2,0)/Y_window_H2_1_max*Y_window_1_max + np.where(
-            #        f_window>4000,Y_window,0)-np.where(f_window>4000,Y_window_H2,0)/Y_window_H2_2_max*Y_window_2_max
-
-
-            #P_window = np.sum([np.where(np.logical_and(f_window>f-10,f_window<f+10),P_window,0)
-            # for f in [526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]],0)
-            #P_window = np.where(Y_window>0.02,P_window,0)
-            #Y_filter=np.where(np.logical_and(f>=10, f<=4500),Y_filter,0)/plotRatio
-            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), label=label)
-            #axF.plot(f_window, Y_window_re[0]/np.amax(Y_window[0]))#, label=label+'_re')
-            #axF.plot(f_window, Y_window_im[0]/np.amax(Y_window[0]))#, label=label+'_im')
+            #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
+            #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
+            #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
             #axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
             if gas == 'Ch8':
@@ -1320,7 +1295,7 @@ if __name__ == '__main__':
             d.read()
             d.delayCorrection()
         d.transition()
-        d.findZeroDelay3()
+        #d.findZeroDelay3()
         #d.show_Spectra()
         #d.FFT3(windowSize=90, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
         #d.show_FFT()
