@@ -243,12 +243,9 @@ class FFT_ionS():
         windowSize is in fs.
         '''
         #windowSize = windowSize+np.abs(self.delayB[0])*1e15 #????????????????????????
-        self.windowSize = windowSize
         for gas in list(self.specBigBottleB):
-            if 'rebin' not in gas:
-                self.specBigBottleB[gas], self.specBigBottleB['window_'+gas], self.delayB = self.inter_window(self.specBigBottleB[gas], self.delayB, windowSize=windowSize, direction=direction, useWindow=useWindow)
-            else:
-                self.specBigBottleB[gas], self.specBigBottleB['window_rebin_'+gas], self.rebin_delay = self.inter_window(self.specBigBottleB[gas], self.rebin_delay, windowSize=windowSize, direction=direction, useWindow=useWindow)
+            self.specBigBottleB[gas], self.specBigBottleB['window_'+gas], self.delayB = self.inter_window(self.specBigBottleB[gas], self.delayB, windowSize=windowSize, direction=direction, useWindow=useWindow)
+           
         for gas in list(self.spectraBottleD):
             if 'rebin' not in gas:
                 self.spectraBottleD[gas], self.spectraBottleD['window_'+gas], self.delayD = self.inter_window(self.spectraBottleD[gas], self.delayD, windowSize=windowSize, direction=direction, useWindow=useWindow)
@@ -435,6 +432,8 @@ class FFT_ionS():
         for gas in list(self.specBigBottleB.keys()):
             self.specBigBottleB['rebin_'+gas] = self.rebin_factor(self.specBigBottleB[gas], factor)
         self.rebin_delay = self.rebin_factor(self.delayB, factor)
+        self.stepSize = self.stepSize*factor
+        
 
     def dataProcess(self):
         #self.mass_spectra()
@@ -516,7 +515,7 @@ class FFT_ionS():
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel("Frequency ($\mathrm{cm^{-1}}$)")
         plt.ylabel("Amplitude (a.u.)", labelpad=25)
-        plt.text(1.1,0.38,'Phase ($\pi$)', rotation = 90)
+        plt.text(1.08,0.38,'Relative Phase v.s. Mass 18 ($\pi$)', rotation = 270)
         axPP = []
         for axx in ax.flatten():
             axPP = axPP + [axx.twinx()]
@@ -552,8 +551,10 @@ class FFT_ionS():
             P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
 
             
-            aa = len(f_window[(f_window<100)])
-            bb=len(f_window[(f_window<4000)])
+            #aa = len(f_window[(f_window<100)])
+            #bb=len(f_window[(f_window<4000)])
+            aa = len(f_window[(f_window<3500)])
+            bb=len(f_window[(f_window<3810)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
@@ -1199,6 +1200,57 @@ class FFT_ionS():
         #plt.savefig('wavelet_transform_mass_' + str(gas) + '.png')
         plt.show()
 
+    def STFTS(self, gas, windowsize=0, ratio=1):
+        '''
+        windowsize is window size in fs 
+        '''
+        windowsize = int(windowsize/self.stepSize/1E15)
+        fig = plt.figure(figsize=(8, 8))
+        # Add a gridspec with two rows and two columns and a ratio of 2 to 7 between
+        # the size of the marginal axes and the main axes in both directions.
+        # Also adjust the subplot parameters for a square plot.
+        gs = fig.add_gridspec(2, 2,  width_ratios=(7, 2), height_ratios=(2, 7),
+                              left=0.1, right=0.9, bottom=0.1, top=0.9,
+                              wspace=0.05, hspace=0.05)
+
+        ax = fig.add_subplot(gs[1, 0])
+        ax_histx = fig.add_subplot(gs[0, 0])
+        ax_histy = fig.add_subplot(gs[1, 1], sharey=ax)
+
+        #if 'rebin' not in gas or 'filter' not in gas:*
+        if 'rebin' in gas:
+            f, t, self.stftSB[gas] = sps.stft(self.specBigBottleB[gas], fs=1/self.stepSize, nperseg=windowsize, noverlap=windowsize-2, nfft=windowsize*5)
+            t=t+self.windowSize*self.stepSize
+            self.stftSBFre = f
+            self.stftSBDelay = t
+            #vmax=abs(self.stftSB[gas][0:int(len(f)/10)]).max()*ratio
+            #vmin=abs(self.stftSB[gas]).min()*ratio
+            vmax=2*np.pi+0.5
+            vmin=-0.5
+            #norm = cm.colors.Normalize(vmax=vmax, vmin=vmin)
+            levels = np.arange(vmin,vmax,(vmax-vmin)/10)
+            #im=ax.contourf(t*10**15, f/10**12*33.35641,
+            #               np.abs(self.stftSB[gas]), levels=levels, cmap='jet', norm=norm)
+            im=ax.contourf(t*10**15, f/10**12*33.35641,
+                           np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']), levels=levels, cmap='jet')
+            ax_histx.plot(t*10**15, np.sum(np.abs(self.stftSB[gas]),axis=0))
+            ax_histx.set_xticklabels([])
+            ax_histy.plot(np.mean(np.abs(self.stftSB[gas]),axis=1),f/10**12*33.35641)
+            #plt.xlim([100, self.delayB[-1]])
+            ax_histy.set_ylim([200, 4500])
+            ax.set_ylabel('Frequency [cm-1]')
+            ax.set_xlabel('Time [fs]')
+            #ax_histy.set_yticklabels([])
+            ax_histy.yaxis.tick_right()
+            #plt.clim(0,abs(self.stftSB[gas][:int(len(f)/15)]).max())
+            #plt.colorbar(im, cax=a1, ticks=levels[::100])
+            d = '_55_90'
+            #plt.title(gas+d)
+            fig.tight_layout()
+            #plt.savefig("sfts_180fs.png",dpi=720, bbox_inches='tight', pad_inches=0.2)
+            plt.show()
+        
+
     def plotPhase(self):
         if ifsavePhase:
             self.wks = op.new_sheet('w',lname=str('Phase')+str('_')+self.folder)
@@ -1272,3 +1324,12 @@ if __name__ == '__main__':
         #d.show_Spectra()
         #d.FFT3(windowSize=90, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
         #d.show_FFT()
+        #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
+        #from scipy.io import savemat
+        #savemat("matlab_matrix.mat", mdic)
+        d.rebinS(5)
+        d.window(windowSize=200,useWindow=False)
+        d.STFTS(gas='rebin_Ch8',windowsize=400)
+        d.STFTS(gas='rebin_Ch0',windowsize=400)
+        #angle8=np.angle(d.stftSB['rebin_Ch8'])
+        #angle0=np.angle(d.stftSB['rebin_Ch0'])
