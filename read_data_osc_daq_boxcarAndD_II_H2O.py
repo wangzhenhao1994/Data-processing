@@ -43,7 +43,7 @@ mpl.rcParams['mathtext.it'] = 'Arial:italic'
 mpl.rcParams['mathtext.rm'] = 'Arial'
 
 
-SMALL_SIZE = 12
+SMALL_SIZE = 16
 MEDIUM_SIZE = 22
 BIGGER_SIZE = 26
 
@@ -153,11 +153,11 @@ class FFT_ionS():
         f = np.fft.fftfreq(n, delta)/1E12*33.35641  # frequency unit cm-1
         f = f[f>0]
         y=np.fft.fftshift(y)
-        #plt.plot(y)
-        #plt.show()
         fft_y = np.fft.fft(y)
         #fft_y = fft_y*np.exp(1j*2*np.pi/n*int(3500+self.windowSize)*np.arange(n))#5415,
         fft_y=fft_y[:np.size(f)]
+        #plt.plot(f,np.abs(fft_y))
+        #plt.show()
         return f, fft_y
 
     def FFT(self):
@@ -165,7 +165,7 @@ class FFT_ionS():
             y,t = self.inter_padding(self.specBigBottleB[gas],self.delayB,paddingSize=np.size(self.specBigBottleB[gas])*2)
             self.fftSB[gas] = self.interFFT(t, y)
 
-    def FFT3(self, windowSize = 100, rebinF=1, paddingF=0, useWindow = False, zeroDirection = 'left', phaseCompensate = True, smooth=True, test=False):
+    def FFT3(self, windowSize = 100, delayRange=False, rebinF=1, paddingF=0, useWindow = False, zeroDirection = 'left', phaseCompensate = True, smooth=True, test=False):
         '''
         windowSize in fs, rebinF = inputShape/outputShape, padddingF means the length of the padding divided by length of the data.
         '''
@@ -175,8 +175,17 @@ class FFT_ionS():
         self.paddingSize = paddingSize
         for gas in self.phaseSpecBottleB.keys():
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
-                _,y,t = self.inter_window(self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+                interSpec = self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:]
+                if delayRange:
+                    y=interSpec[np.where(np.logical_and(delayRange[0]<self.delayB,self.delayB<delayRange[1]))]
+                    t=self.delayB[np.where(np.logical_and(delayRange[0]<self.delayB,self.delayB<delayRange[1]))]
+                    _,y,t = self.inter_window(y,t,windowSize=0,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+                else:
+                    _,y,t = self.inter_window(interSpec,self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 #_,y,t = self.inter_window(self.phaseSpecBottleB[gas][i],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+                #plt.plot(t,y)
+                #plt.plot(self.delayB,self.specBigBottleB['Ch8']-np.mean(self.specBigBottleB['Ch8']))
+                #plt.show()
                 y,t = self.inter_padding(y,t,paddingSize=paddingSize)
                 if test:
                     y=np.sin(2*np.pi/300*np.arange(np.size(t)))+np.sin(2*np.pi/100*np.arange(np.size(t))+np.pi)+np.sin(2*np.pi/200*np.arange(np.size(t)))
@@ -1216,7 +1225,8 @@ class FFT_ionS():
                            np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']), levels=levels, cmap='jet')
             ax_histx.plot(t*10**15, np.sum(np.abs(self.stftSB[gas]),axis=0))
             ax_histx.set_xticklabels([])
-            ax_histy.plot(np.mean(np.abs(self.stftSB[gas]),axis=1),f/10**12*33.35641)
+            #ax_histy.plot(np.mean(np.abs(self.stftSB[gas]),axis=1),f/10**12*33.35641)
+            ax_histy.plot(np.mean(np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']),axis=1),f/10**12*33.35641)
             #plt.xlim([100, self.delayB[-1]])
             ax_histy.set_ylim([200, 4500])
             ax.set_ylabel('Frequency [cm-1]')
@@ -1230,7 +1240,66 @@ class FFT_ionS():
             fig.tight_layout()
             #plt.savefig("sfts_180fs.png",dpi=720, bbox_inches='tight', pad_inches=0.2)
             plt.show()
-        
+
+    def STFTS2(self, windowsize=300):
+        startDelay = 90
+        stepNum=0
+        _preP = 'window'+'_'
+        stft2 = {}
+        while (startDelay+windowsize+(stepNum+1)*windowsize/2)*1E-15<self.delayB[-1]:
+            stft2[str(startDelay+(stepNum+1)*windowsize/2)] = {}
+            self.FFT3(windowSize=0, delayRange=[(startDelay+stepNum*windowsize/2)*1E-15,(startDelay+windowsize+stepNum*windowsize/2)*1E-15], rebinF=1,paddingF = 4.5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
+            for gas in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
+                f_window = self.fftSB[_preP+'fre']
+                Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
+                Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
+                P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
+                P_inter = np.mean(P_inter[:,np.where(np.logical_and(3656-30<f_window,f_window<3655+30))],2)
+                P_inter = P_inter.flatten()
+                P_inter=np.where(P_inter<0,P_inter+2*np.pi,P_inter)
+                if gas == 'Ch8':
+                    P_ref = P_inter
+                    P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
+                else:
+                    P_inter = P_inter-P_ref
+                    P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
+                P_window=P_window/np.pi
+                #aa = len(f_window[(f_window<100)])
+                #bb=len(f_window[(f_window<4150)])
+                #f_window = f_window[aa:bb]
+                #Y_window = Y_window[:,aa:bb]
+                #P_window = P_window[:,aa:bb]
+                #P_window[0]=np.where(P_window[0]<0,P_window[0]+2*np.pi,P_window[0])
+                #P_window = P_window/np.pi
+                stft2[str(startDelay+(stepNum+1)*windowsize/2)][gas]=P_window
+                #print(P_window)
+                #if stepNum==0 and gas=='Ch8':
+                #    stft2['fre'] = f_window
+                #if gas == 'Ch2':
+                #    plt.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))
+                #    plt.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
+                #    plt.show()
+            stepNum=stepNum+1
+
+        for gas in ['Ch0','Ch2','Ch4','Ch6']:
+            t=[]
+            p=[]
+            std=[]
+            for key in stft2.keys():
+                #print(key)
+                if key == 'fre':
+                    continue
+                t = t+[float(key)]
+                if stft2[key][gas][0]+0.1<0:
+                    p = p+[stft2[key][gas][0]+2]
+                else:
+                    p = p+[stft2[key][gas][0]]
+                std=std+[stft2[key][gas][1]]
+            plt.errorbar(t,p,yerr=std,ecolor='black',fmt='r',capsize=5, marker='s',markersize=10,mec='r',mfc='r',elinewidth=2,markeredgewidth=2,)
+            plt.xlabel('Delay(fs)')
+            plt.ylabel('Phase($\pi$)')
+            plt.show()
+
 
     def plotPhase(self):
         if ifsavePhase:
@@ -1303,8 +1372,8 @@ if __name__ == '__main__':
         d.transition()
         d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=90, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
-        d.show_FFT()
+        #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
+        #d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)
@@ -1312,5 +1381,4 @@ if __name__ == '__main__':
         #d.window(windowSize=200,useWindow=False)
         #d.STFTS(gas='rebin_Ch8',windowsize=400)
         #d.STFTS(gas='rebin_Ch0',windowsize=400)
-        #angle8=np.angle(d.stftSB['rebin_Ch8'])
-        #angle0=np.angle(d.stftSB['rebin_Ch0'])
+        d.STFTS2(windowsize=182.5*2)
