@@ -22,12 +22,9 @@ import pathlib as pl
 import os
 from math import ceil, pi, sqrt, log 
 import pickle
-from brokenaxes import brokenaxes
-from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
-from Superlets.python.superlet import *
 
 import originpro as op
 ifsave = False
@@ -506,8 +503,8 @@ if __name__ == '__main__':
         #x.window(windowSize=150, direction='left')
         #x.rmvExp()
         #x.smooth(windowSize=9)
-        #x.show_Spectra()
-        #plt.show()
+        x.show_Spectra()
+        plt.show()
         #x.padding(paddingSize=100000)
         #x.FFTS()
         #x.show_FFT()

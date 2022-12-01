@@ -1280,7 +1280,12 @@ class FFT_ionS():
                 #    plt.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
                 #    plt.show()
             stepNum=stepNum+1
-
+        color={}
+        color['Ch0']='r'
+        color['Ch2']='g'
+        color['Ch4']='b'
+        color['Ch6']='c'
+        plt.figure(figsize=(7,5))
         for gas in ['Ch0','Ch2','Ch4','Ch6']:
             t=[]
             p=[]
@@ -1295,10 +1300,12 @@ class FFT_ionS():
                 else:
                     p = p+[stft2[key][gas][0]]
                 std=std+[stft2[key][gas][1]]
-            plt.errorbar(t,p,yerr=std,ecolor='black',fmt='r',capsize=5, marker='s',markersize=10,mec='r',mfc='r',elinewidth=2,markeredgewidth=2,)
+            plt.errorbar(t,p,yerr=std,ecolor='black',fmt=color[gas],mec=color[gas],mfc=color[gas],capsize=5, marker='s',markersize=10,elinewidth=2,markeredgewidth=2,label=self.label[gas])
             plt.xlabel('Delay(fs)')
             plt.ylabel('Phase($\pi$)')
-            plt.show()
+            plt.legend()
+        plt.tight_layout()
+        plt.show()
 
 
     def plotPhase(self):
