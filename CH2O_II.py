@@ -73,10 +73,8 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\Data')
-        #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
-        #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\Data',folder))
+        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\Data\dataProcessing\CH2O')
+        self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\Data\dataProcessing\CH2O',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -986,7 +984,7 @@ class FFT_ionS():
         plt.show()
 
 if __name__ == '__main__':
-    for ff in [r'4.5E+14_H2O',r'7.2E+14_H2O',r'8.9E+14_H2O']:
+    for ff in [r'pu1.2E+15pr1.5E+15_CH2O']:
         d = FFT_ionS(ff)
         if d.checkSavedData():
             d.read()

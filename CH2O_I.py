@@ -66,7 +66,7 @@ def load_obj(filename):
 
 class FFT_ionS():
     #def __init__(self, filename, massRange=[5, 90], dcRange=2, cal_mass=[45,61], cal_pixel=[415,1141]):
-    def __init__(self, filename, scanTime, sampRate, massRange=[5, 50], molecule='CO2', intensity = 0, dcRange=5, ChN=11, cal_mass=[2,16], cal_pixel=[3082,10216]):
+    def __init__(self, filename, scanTime, sampRate, massRange=[5, 50], molecule='CH2O', intensity = 0, dcRange=5, ChN=11, cal_mass=[2,16], cal_pixel=[3082,10216]):
     #def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[17,18], cal_pixel=[494,583]):
     #def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[17,18], cal_pixel=[197,279]):
         '''
@@ -106,7 +106,7 @@ class FFT_ionS():
         except TypeError:
             self.intensity = str('%.1E' % Decimal(intensity))
         self.stage = 'piezo'
-        self.savePath = os.path.join(self.rootPath, r'dataProcessing', r'CO2', str(self.intensity)+'_'+self.molecule)
+        self.savePath = os.path.join(self.rootPath, r'dataProcessing', r'CH2O', str(self.intensity)+'_'+self.molecule)
 
         #setting for data from digitizer
         self.calculator = Calibration_mass(cal_mass, cal_pixel)
@@ -176,14 +176,14 @@ class FFT_ionS():
                     for i in [0,2,4,6,8,10]:
                         self.interSpectraBottleB['Ch'+str(i)] = data[i::ChN][-int(m*sumN):].reshape(m, sumN, data.shape[1]).sum(axis=1)
                     self.interinterSpectraBottleB = {}
-                    num = int(m/59)
+                    num = int(m/11)
                     print(num)
                     for gas in self.interSpectraBottleB.keys():
                         self.interinterSpectraBottleB[gas] = {}
                         self.spectraBottleB[gas] = np.zeros((num, 13000))
                     for i in range(num):
                         for gas in self.interSpectraBottleB.keys():
-                            _inter = self.interSpectraBottleB[gas][i*59:(i+1)*59]
+                            _inter = self.interSpectraBottleB[gas][i*11:(i+1)*11]
                             self.interinterSpectraBottleB[gas][str(i)] = _inter 
             self.num = num
             self.delayCorrection()
@@ -454,11 +454,11 @@ class FFT_ionS():
 
 if __name__ == '__main__':
     
-    #CO2
+    #CH2O
     f0 = [r'scan_tof_2022-10-06-10-45-18',r'scan_tof_2022-10-06-13-29-21',r'scan_tof_2022-10-06-19-08-32'] #260-240
 
 
-    f0 = FFT_ionS(filename=f0, scanTime=10, sampRate=300, molecule='CO2', intensity=[cal_intensity(250,9,5),cal_intensity(240,8.1,5)],ChN=11)
+    f0 = FFT_ionS(filename=f0, scanTime=10, sampRate=300, molecule='CH2O', intensity=[cal_intensity(250,9,5),cal_intensity(240,8.1,5)],ChN=11)
 
     ff=[f0]
     for x in ff:
