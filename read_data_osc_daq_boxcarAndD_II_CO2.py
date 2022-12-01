@@ -221,15 +221,14 @@ class FFT_ionS():
             n=1
             self.phaseSpecBottleB[gas] = self.specBigBottleB[gas][-int(self.specBigBottleB[gas].shape[0]/n)*n:].reshape(int(self.specBigBottleB[gas].shape[0]/n), n, self.specBigBottleB[gas].shape[1]).sum(axis=1)
             self.specBigBottleB[gas] = self.specBigBottleB[gas].sum(axis = 0)#np.take(self.specBigBottleB[gas],[i for i in range(self.specBigBottleB[gas].shape[0]) if i not in self.goodSpecIndex],axis=0).sum(axis = 0)
-        self.specBigBottleB['Ch2'] = self.specBigBottleB['Ch2']-self.specBigBottleB['Ch0']
         self.specBigBottleB['Ch4'] = self.specBigBottleB['Ch4']-self.specBigBottleB['Ch10']
+        self.specBigBottleB['Ch6'] = self.specBigBottleB['Ch6']-self.specBigBottleB['Ch0']
         
         self.label = {}
-        self.label['Ch0'] = 'Mass1'
-        self.label['Ch2'] = 'Mass2'
-        self.label['Ch4'] = 'Mass16'
-        self.label['Ch6'] = 'Mass17'
-        self.label['Ch8'] = 'Mass18'
+        self.label['Ch2'] = 'Mass16'
+        self.label['Ch4'] = 'Mass22'
+        self.label['Ch6'] = 'Mass28'
+        self.label['Ch8'] = 'Mass44'
 
     def checkSavedData(self):
         if os.path.exists(os.path.join(self.savePath,r'totalSpec.pkl')):
