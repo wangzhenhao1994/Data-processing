@@ -526,7 +526,6 @@ class FFT_ionS():
         #P_inter = np.unwrap(np.where(P_inter<0,P_inter+np.pi,P_inter))
         return b
 
-
     def show_FFT(self):
         self.dcRange=0
         fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True,figsize=(18,9))
