@@ -27,7 +27,6 @@ from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
-from Superlets.python.superlet import *
 
 import originpro as op
 ifsave = False
