@@ -136,9 +136,9 @@ class FFT_ionS():
         for filename in self.filename:
             with h5py.File(filename, 'r+') as f:
                 print(np.array(f['dataD'].shape))
-                #plt.plot(np.sum(np.array(f['dataD'][164*self.channelSize:(164+1)*self.channelSize]),0))
+                plt.plot(np.sum(np.array(f['dataD'][0*self.channelSize:(1)*self.channelSize]),0))
                 #print('the pump-only count is '+str(np.sum(np.array(f['dataD'][164*self.channelSize:(164+1)*self.channelSize]))/116.7),'\nthe probe-only count is '+str(np.sum(np.array(f['dataD'][165*self.channelSize:(165+1)*self.channelSize]))/116.7) )
-                #plt.show()
+                plt.show()
                 print(f.keys())
                 #print(np.array(f['ppNum']))
                 #self.spec=np.array(f['spectrumLog'])
@@ -519,8 +519,8 @@ class FFTOSC(FFT_ionS):
 
 if __name__ == '__main__':
     
-    dataPath = r'C:\Users\user\Desktop\Data_newTOF'
-    yearAndMonth = r'2022-04'
+    dataPath = r'D:\DataProcessing'
+    yearAndMonth = r'2022-10'
     
     
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-10-12', r'scan_tof_2021-10-12-20-17-16', False, 36, [0,1], False]#80-100 35 Ar
@@ -550,7 +550,7 @@ if __name__ == '__main__':
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-04-30', [r'scan_tof_2022-04-30-16-49-32'], False, 190, [0,1], True] #120-120 MCP 3180V Mass 18
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-04-30', [r'scan_tof_2022-04-30-19-58-17'], False, 200, [0,1], True] #200-200 MCP 3800V Mass 2 and 16 long scan
 
-    yearAndMonth = r'2022-05'
+    yearAndMonth = r'2022-10'
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-05-01', [r'scan_tof_2022-05-01-15-58-26'], False, 190, [0,1], True] #180-180 MCP 3800V Mass 2,16
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-05-01', [r'scan_tof_2022-05-01-19-40-18'], False, 190, [0,1], True] #200-200 MCP 3800V Mass 2,16 !!!!!!!Good
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-05-01', [r'scan_tof_2022-05-01-22-48-45'], False, 190, [0,1], True] #180-180 MCP 3800V Mass 2,16
@@ -572,7 +572,7 @@ if __name__ == '__main__':
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-05-06', [r'scan_tof_2022-05-06-16-58-05 - Copy'], False, 199, [0,1], True] #140-220 MCP 3800V Mass2 and 16
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-05-06', [r'scan_tof_2022-05-06-18-32-47'], False, 199, [0,1], True] #100-220 MCP 3800V Mass2 and 16
 
-    date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-05-31', [r'scan_tof_2022-05-31-09-23-21'], False, 179, [0,1], True] #100-220 MCP 3800V Mass2 and 16
+    date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-10-10', [r'scan_tof_2022-10-10-21-27-42'], False, 20, [0,1], True] #100-220 MCP 3800V Mass2 and 16
     
     
     dataPath = pl.PurePath(dataPath)
@@ -596,7 +596,7 @@ if __name__ == '__main__':
         for x in ff:
             
             x.read_split(overNight = False, firstTry =firstTry, sumNo = sumNo, usefulRange = usefulRange, cu=cu)
-            x.read_multi()
+            #x.read_multi()
             #check the spectrum
             #for i in range(0,4):
             #   plt.plot(x.spec[i],label=str(i))

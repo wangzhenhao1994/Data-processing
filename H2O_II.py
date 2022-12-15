@@ -169,6 +169,7 @@ class FFT_ionS():
         '''
         windowSize in fs, rebinF = inputShape/outputShape, padddingF means the length of the padding divided by length of the data.
         '''
+        self.smooth = smooth
         self.stepSize = self.stepSize*rebinF
         _size = self.specBigBottleB['Ch0'].size
         paddingSize = int(_size*paddingF)
@@ -206,6 +207,8 @@ class FFT_ionS():
             self.fftSB['window_'+gas+'_fft'] = _interY
             self.fftSB[gas] = 0
         self.fftSB['window_'+'fre'] = f
+        print(self.folder)
+        save_obj(self.fftSB,os.path.join(self.savePath,str(smooth)+str(self.folder)+r'fftSB.pkl'))
 
     def transition(self):
         self.specBigBottleB_noPad=self.specBigBottleB.copy()
@@ -286,7 +289,7 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            data=sps.savgol_filter(data, window_length=10, polyorder=1,deriv=1,delta=1, mode='interp')
+            data=sps.savgol_filter(data, window_length=10, polyorder=1,deriv=1,delta=10, mode='nearest')
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -528,13 +531,14 @@ class FFT_ionS():
 
 
     def show_FFT(self):
+        self.interfftSB = load_obj(os.path.abspath(os.path.join(d.savePath, 'False'+str(self.folder)+r'fftSB.pkl')))
         self.dcRange=0
-        fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True,figsize=(18,9))
+        fig, ax = plt.subplots(nrows=5, ncols=1, sharex=True, sharey=True,figsize=(10,10))
         fig.add_subplot(111, frameon=False)
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel("Frequency ($\mathrm{cm^{-1}}$)")
         plt.ylabel("Amplitude (a.u.)", labelpad=25)
-        plt.text(1.08,0.38,'Relative Phase v.s. Mass 18 ($\pi$)', rotation = 270)
+        plt.text(1.18,0.35,'Relative Phase v.s. Mass 18 ($\pi$)', rotation = 270)
         axPP = []
         for axx in ax.flatten():
             axPP = axPP + [axx.twinx()]
@@ -552,7 +556,7 @@ class FFT_ionS():
             elif gas not in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
                 continue
             
-            axF=ax[int(i/3),i%3]
+            axF=ax[i]
             axP = axPP[i]
             #axP.set_ylim([-np.pi,np.pi])
             label=lab[i]
@@ -562,30 +566,114 @@ class FFT_ionS():
             Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
-            P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
+            if self.smooth and self.folder==r'7.2E+14_H2O':
+                P_inter = np.angle(self.interfftSB[_preP+gas+'_fft'])
+            else:
+                P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
+            
             if gas == 'Ch8':
                 P_ref = P_inter
                 P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             else:
                 P_inter = P_inter-P_ref
-                P_window =  np.array([np.mean(P_inter+0.2,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
+                for n in range(np.shape(P_inter)[0]):
+                    P_inter[n]=np.where(P_inter[n]>2*np.pi-2, P_inter[n]-2*np.pi, P_inter[n])
+
+                P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
 
             
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
             aa = len(f_window[(f_window<100)])
-            bb=len(f_window[(f_window<4150)])
+            bb=len(f_window[(f_window<4300)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            P_window[0]=np.where(P_window[0]<0,P_window[0]+2*np.pi,P_window[0])
+            P_window[0]=np.where(P_window[0]<-np.pi-1,P_window[0]+2*np.pi,P_window[0])
+            P_window[0]=np.where(P_window[0]>np.pi-1,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
-
+            omega = [526.49165,625.20883,699.99458,810.67748,882.47179,1145.71762,1343.15199,1594.43209,1696.1407,2153.82946,2324.34096,2677.32968,3212.79562,3655.52723]
+            if self.folder == r'4.5E+14_H2O':
+                omega=[526.49165,810.67748,1343.15199,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
+                for om in omega:
+                    if i>0:
+                        axF.axvline(x=om,ymin=0,ymax=1.2,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                    else:
+                        axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                        axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
+                        if om==1594.43209:
+                            axF.text(x=om-70, y=1.2, s='H2O or H2O+ Bend',fontsize='8')
+                        if om==3655.52723:
+                            axF.text(x=om-70, y=1.2, s='H2O a1 Sym',fontsize='8')
+                if gas == 'Ch0':
+                    omega = [526.49165,810.67748,1343.15199,2115,3655.52723]
+                elif gas == 'Ch2':
+                    omega = [3655.52723]
+                elif gas == 'Ch4':
+                    omega = [3655.52723]
+                elif gas == 'Ch6':
+                    omega = [526.49165,810.67748,1343.15199,1594.43209,2115,3655.52723]
+                inter = 0
+                for w in omega:
+                    inter = inter + np.where(np.abs(f_window-w)<10,P_window,0)
+                inter = np.where(inter==0,np.inf,inter)
+                P_window = inter
+            elif self.folder == r'7.2E+14_H2O':
+                omega=[526.49165,810.67748,1343.15199,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
+                for om in omega:
+                    if i>0:
+                        axF.axvline(x=om,ymin=0,ymax=1.2,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                    else:
+                        axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                        axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
+                        if om==1594.43209:
+                            axF.text(x=om-70, y=1.2, s='H2O or H2O+ Bend',fontsize='8')
+                        if om==3655.52723:
+                            axF.text(x=om-70, y=1.2, s='H2O a1 Sym',fontsize='8')
+                if gas == 'Ch0':
+                    omega = [526.49165,810.67748,1343.15199,2115,3212.79562,3655.52723]
+                elif gas == 'Ch2':
+                    omega = [3655.52723]
+                elif gas == 'Ch4':
+                    omega = [3655.52723]
+                elif gas == 'Ch6':
+                    omega = [1594.43209,3655.52723]
+                inter = 0
+                for w in omega:
+                    inter = inter + np.where(np.abs(f_window-w)<10,P_window,0)
+                inter = np.where(inter==0,np.inf,inter)
+                P_window = inter
+            elif self.folder == r'8.9E+14_H2O':
+                omega=[526.49165,810.67748,1343.15199,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
+                for om in omega:
+                    if i>0:
+                        axF.axvline(x=om,ymin=0,ymax=1.2,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                    else:
+                        axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                        axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
+                        if om==1594.43209:
+                            axF.text(x=om-70, y=1.2, s='H2O or H2O+ Bend',fontsize='8')
+                        if om==3655.52723:
+                            axF.text(x=om-70, y=1.2, s='H2O a1 Sym',fontsize='8')
+                        axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                if gas == 'Ch0':
+                    omega = [526.49165,810.67748,1343.15199,2115,1594.43209,3655.52723]
+                elif gas == 'Ch2':
+                    omega = [3655.52723]
+                elif gas == 'Ch4':
+                    omega = [3655.52723]
+                elif gas == 'Ch6':
+                    omega = [810.67748,1343.15199,1594.43209,2115,3212.79562,3655.52723]
+                inter = 0
+                for w in omega:
+                    inter = inter + np.where(np.abs(f_window-w)<10,P_window,0)
+                inter = np.where(inter==0,np.inf,inter)
+                P_window = inter
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])))#, label=label)
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), 'k', clip_on=False, label=label)
             #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
@@ -593,20 +681,26 @@ class FFT_ionS():
             if gas == 'Ch8':
                 pass
             else:
-                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
+                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r',linewidth=2,label='Phase')
+                #axP.axhline(y=0.5, color='b', linestyle='--', label='Phase_aid')
+                #axP.axhline(y=1.5, color='b', linestyle='--')
             #plot(f_window,P_window,'r')
             #axF.set_ylim([0,1])
             #axF.set_xlim([200,4500])
-            axP.set_ylim([-0.5,2.5])
-            axF.legend(loc=2,ncol=2)
+            axP.set_yticks([-1,-0.5,0,0.5,1])
+            axP.grid(visible=True,linestyle='--',linewidth='0.3',c='b')
+            axP.set_ylim([-1.3,1.3])
+            axP.legend(loc=(0.02,0.6),ncol=2,fontsize=10)
+            axF.legend(loc=(0.02,0.8),ncol=2,fontsize=10)
+    
             i=i+1
             if ifsave:
                 self.wks.from_list(0, f_window, lname="Frequency", axis='X')
                 self.wks.from_list(i, np.abs(Y_window), lname=label, axis='Y')
 
         fig.tight_layout()
-        #plt.savefig(os.path.join(os.path.join(self.savePath,r'fft.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
-        plt.show()
+        plt.savefig(os.path.join(os.path.join(self.savePath,r'fft.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
+        #plt.show()
 
     def show_FFTD(self):
         #plt.figure()
@@ -1380,7 +1474,9 @@ if __name__ == '__main__':
         d.findZeroDelay3()
         #d.show_Spectra()
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
-        #d.show_FFT()
+        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
+        
+        d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)
@@ -1388,4 +1484,4 @@ if __name__ == '__main__':
         #d.window(windowSize=200,useWindow=False)
         #d.STFTS(gas='rebin_Ch8',windowsize=400)
         #d.STFTS(gas='rebin_Ch0',windowsize=400)
-        d.STFTS2(windowsize=182.5*2)
+        #d.STFTS2(windowsize=182.5*2)
