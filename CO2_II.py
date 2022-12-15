@@ -901,11 +901,11 @@ class FFT_ionS():
 
 if __name__ == '__main__':
     directory = os.path.abspath(r'D:\DataProcessing\CO2')
-    for ff in [name for name in os.listdir(directory)
-            if os.path.isdir(os.path.join(directory, name))]:
-        print(ff)
+    #for ff in [name for name in os.listdir(directory)
+    #        if os.path.isdir(os.path.join(directory, name))]:
+    #    print(ff)
     #for ff in [r'pu1.1E+15pr1.1E+15_CO2']:
-    #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#benging?
+    for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#benging?
     #for ff in [r'pu1.2E+15pr2.2E+14_CO2',r'pu1.2E+15pr8.7E+14_CO2']:
         d = FFT_ionS(ff)
         if d.checkSavedData():

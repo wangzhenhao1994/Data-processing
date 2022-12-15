@@ -767,16 +767,14 @@ class FFT_ionS():
             self.fftSB[gas] = 0
         self.fftSB['window_'+'fre'] = f
     
-    
     def show_FFT(self):
         self.dcRange=0
-        fig, ax = plt.subplots(nrows=2, ncols=3, sharex=True, sharey=True,figsize=(18,9))
+        fig, ax = plt.subplots(nrows=5, ncols=1, sharex=True, sharey=True,figsize=(9,18))
         fig.add_subplot(111, frameon=False)
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel("Frequency ($\mathrm{cm^{-1}}$)")
         plt.ylabel("Amplitude (a.u.)", labelpad=25)
         plt.text(1.08,0.38,'Relative Phase v.s. Mass 18 ($\pi$)', rotation = 270)
-        plt.title(self.folder,fontsize=40,pad =20)
         axPP = []
         for axx in ax.flatten():
             axPP = axPP + [axx.twinx()]
@@ -794,7 +792,7 @@ class FFT_ionS():
             elif gas not in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
                 continue
             
-            axF=ax[int(i/3),i%3]
+            axF=ax[i]
             axP = axPP[i]
             #axP.set_ylim([-np.pi,np.pi])
             label=lab[i]
@@ -815,44 +813,62 @@ class FFT_ionS():
             
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
-            aa = len(f_window[(f_window<200)])
-            bb=len(f_window[(f_window<4500)])
+            aa = len(f_window[(f_window<100)])
+            bb=len(f_window[(f_window<4150)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
-            Y_window[0] = self.baseLineRemove(Y_window[0]/np.amax(Y_window[0]))
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            P_window[0]=np.where(P_window[0]<0,P_window[0]+2*np.pi,P_window[0])
+            #P_window[0]=np.where(P_window[0]<0.1,P_window[0]+2*np.pi,P_window[0])
             P_window = P_window/np.pi
-            P_window[0] = np.where(Y_window[0]>0.05,P_window[0],np.inf)
+            omega = [812,1343,1742,2157,2777]
+            if gas == 'Ch0':
+                omega = [526.49165,810.67748,1343.15199,2115,3655.52723]
+            elif gas == 'Ch2':
+                omega = [3655.52723]
+            elif gas == 'Ch4':
+                omega = [3655.52723]
+            elif gas == 'Ch6':
+                omega = [526.49165,810.67748,1343.15199,2115,3655.52723]
+            inter = 0
+            for w in omega:
+                inter = inter + np.where(np.abs(f_window-w)<20,P_window,0)
+            inter = np.where(inter==0,np.inf,inter)
+            P_window = inter
+
+            
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            axF.plot(f_window, Y_window[0], label=self.label[gas])
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), 'k', label=label)
             #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
             #axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
+            peaks, _ = sps.find_peaks(Y_window[0],width=5,prominence=0,distance=40,height=0.05)
+            for peak in peaks:
+                axF.text(f_window[peak],Y_window[0][peak]+0.05,str(int(f_window[peak])))
             if gas == 'Ch8':
-                peaks, _ = sps.find_peaks(Y_window[0],width=5,prominence=0,distance=40,height=0.05)
                 axF.plot(f_window[peaks],Y_window[0][peaks],'+r')
-                for peak in peaks:
-                    axF.text(f_window[peak],Y_window[0][peak]+0.05,str(int(f_window[peak])))
-                pass
             else:
-                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
+                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r',linewidth=2,label='Phase')
+                #axP.axhline(y=0.5, color='b', linestyle='--', label='Phase_aid')
+                #axP.axhline(y=1.5, color='b', linestyle='--')
             #plot(f_window,P_window,'r')
             #axF.set_ylim([0,1])
             #axF.set_xlim([200,4500])
+            axP.set_yticks([0,0.5,1,1.5,2])
+            axP.grid(visible=True,linestyle='--',linewidth='0.5',c='b')
             axP.set_ylim([-0.5,2.5])
-            axF.legend(loc=1,ncol=2,shadow=False,framealpha=0,scatterpoints=0)
+            axP.legend(loc=(0.22,0.85),ncol=2,fontsize=10)
+            axF.legend(loc=(0.02,0.85),ncol=2,fontsize=10)
             i=i+1
             if ifsave:
                 self.wks.from_list(0, f_window, lname="Frequency", axis='X')
                 self.wks.from_list(i, np.abs(Y_window), lname=label, axis='Y')
 
         fig.tight_layout()
-        #plt.savefig(os.path.join(os.path.join(self.savePath,self.folder+'.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
+        #plt.savefig(os.path.join(os.path.join(self.savePath,r'fft.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
         plt.show()
 
     def show_Spectra(self, shift=0):
