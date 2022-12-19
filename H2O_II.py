@@ -600,14 +600,14 @@ class FFT_ionS():
                 omega=[526.49165,810.67748,1343.15199,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
                 for om in omega:
                     if i>0:
-                        axF.axvline(x=om,ymin=0,ymax=1.2,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                        axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
                     else:
                         axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
                         axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
                         if om==1594.43209:
-                            axF.text(x=om-70, y=1.2, s='H2O or H2O+ Bend',fontsize='8')
+                            axF.text(x=om-70, y=1.8, s='H2O+ Bend',fontsize='8')
                         if om==3655.52723:
-                            axF.text(x=om-70, y=1.2, s='H2O a1 Sym',fontsize='8')
+                            axF.text(x=om-70, y=1.8, s='H2O a1 Sym',fontsize='8')
                 if gas == 'Ch0':
                     omega = [526.49165,810.67748,1343.15199,2115,3655.52723]
                 elif gas == 'Ch2':
@@ -625,14 +625,14 @@ class FFT_ionS():
                 omega=[526.49165,810.67748,1343.15199,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
                 for om in omega:
                     if i>0:
-                        axF.axvline(x=om,ymin=0,ymax=1.2,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                        axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
                     else:
                         axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
                         axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
                         if om==1594.43209:
-                            axF.text(x=om-70, y=1.2, s='H2O or H2O+ Bend',fontsize='8')
+                            axF.text(x=om-70, y=1.8, s='H2O+ Bend',fontsize='8')
                         if om==3655.52723:
-                            axF.text(x=om-70, y=1.2, s='H2O a1 Sym',fontsize='8')
+                            axF.text(x=om-70, y=1.8, s='H2O a1 Sym',fontsize='8')
                 if gas == 'Ch0':
                     omega = [526.49165,810.67748,1343.15199,2115,3212.79562,3655.52723]
                 elif gas == 'Ch2':
@@ -650,15 +650,14 @@ class FFT_ionS():
                 omega=[526.49165,810.67748,1343.15199,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
                 for om in omega:
                     if i>0:
-                        axF.axvline(x=om,ymin=0,ymax=1.2,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                        axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
                     else:
                         axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
                         axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
                         if om==1594.43209:
-                            axF.text(x=om-70, y=1.2, s='H2O or H2O+ Bend',fontsize='8')
+                            axF.text(x=om-70, y=1.8, s='H2O+ Bend',fontsize='8')
                         if om==3655.52723:
-                            axF.text(x=om-70, y=1.2, s='H2O a1 Sym',fontsize='8')
-                        axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                            axF.text(x=om-70, y=1.8, s='H2O a1 Sym',fontsize='8')
                 if gas == 'Ch0':
                     omega = [526.49165,810.67748,1343.15199,2115,1594.43209,3655.52723]
                 elif gas == 'Ch2':
@@ -673,7 +672,7 @@ class FFT_ionS():
                 inter = np.where(inter==0,np.inf,inter)
                 P_window = inter
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), 'k', clip_on=False, label=label)
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), 'k', clip_on=True, label=label)
             #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
@@ -691,6 +690,8 @@ class FFT_ionS():
             axP.grid(visible=True,linestyle='--',linewidth='0.3',c='b')
             axP.set_ylim([-1.3,1.3])
             axP.legend(loc=(0.02,0.6),ncol=2,fontsize=10)
+            axF.set_yscale('log')
+            axF.set_ylim([10**-2.5,10**0])
             axF.legend(loc=(0.02,0.8),ncol=2,fontsize=10)
     
             i=i+1
@@ -699,7 +700,8 @@ class FFT_ionS():
                 self.wks.from_list(i, np.abs(Y_window), lname=label, axis='Y')
 
         fig.tight_layout()
-        plt.savefig(os.path.join(os.path.join(self.savePath,r'fft.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
+        plt.savefig(os.path.join(os.path.join(self.savePath,r'fft_logy.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
+        #plt.savefig(os.path.join(os.path.join(self.savePath,r'fft.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
         #plt.show()
 
     def show_FFTD(self):

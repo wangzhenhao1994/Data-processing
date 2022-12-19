@@ -197,7 +197,7 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            data=sps.savgol_filter(data, window_length=10, polyorder=3,deriv=2,delta=2, mode='interp')
+            data=sps.savgol_filter(data, window_length=20, polyorder=1,deriv=1,delta=1, mode='interp')
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -405,7 +405,7 @@ class FFT_ionS():
 
         for i in range(self.specBigBottleB['Ch0'].shape[0]):
             #_iS[i]=self.butter_bandpass_filter(self.specBigBottleB[gas][i], (3643.52883-0.1)/33.35641*1e12, (3643.52883+0.1)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-            _iS[i]=self.butter_bandpass_filter(sumSpec[i], 500/33.35641*1e12, 2000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            _iS[i]=self.butter_bandpass_filter(sumSpec[i], 100/33.35641*1e12, 3000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
 
         try:
             iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS)
@@ -768,20 +768,20 @@ class FFT_ionS():
     
     
     def show_FFT(self):
+        #self.interfftSB = load_obj(os.path.abspath(os.path.join(d.savePath, 'False'+str(self.folder)+r'fftSB.pkl')))
         self.dcRange=0
-        fig, ax = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=True,figsize=(18,9))
+        fig, ax = plt.subplots(nrows=4, ncols=1, sharex=True, sharey=True,figsize=(10,10))
         fig.add_subplot(111, frameon=False)
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel("Frequency ($\mathrm{cm^{-1}}$)")
         plt.ylabel("Amplitude (a.u.)", labelpad=25)
-        plt.text(1.08,0.38,'Relative Phase v.s. Mass 18 ($\pi$)', rotation = 270)
-        plt.title(self.folder,fontsize=40,pad =20)
+        plt.text(1.18,0.35,'Relative Phase v.s. Mass 18 ($\pi$)', rotation = 270)
         axPP = []
         for axx in ax.flatten():
             axPP = axPP + [axx.twinx()]
         axPP[0].get_shared_y_axes().join(axPP[0], axPP[1],axPP[2])
 
-        lab=['Mass 18','Mass 1','Mass 2','Mass 16','Mass 17']
+        lab=['Mass 44','Mass 16','Mass 22','Mass 28']
         i=0
         if ifsave:
             self.wks = op.new_sheet('w',lname=str('FFT')+str('_')+self.folder)
@@ -793,7 +793,7 @@ class FFT_ionS():
             elif gas not in ['Ch8','Ch2','Ch4','Ch6']:
                 continue
             
-            axF=ax[int(i/2),i%2]
+            axF=ax[i]
             axP = axPP[i]
             #axP.set_ylim([-np.pi,np.pi])
             label=lab[i]
@@ -803,55 +803,82 @@ class FFT_ionS():
             Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
+
             P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
+            
             if gas == 'Ch8':
                 P_ref = P_inter
                 P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             else:
                 P_inter = P_inter-P_ref
+                #for n in range(np.shape(P_inter)[0]):
+                #    P_inter[n]=np.where(P_inter[n]>2*np.pi-2, P_inter[n]-2*np.pi, P_inter[n])
+
                 P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
 
             
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
-            aa = len(f_window[(f_window<200)])
-            bb=len(f_window[(f_window<3500)])
+            aa = len(f_window[(f_window<400)])
+            bb=len(f_window[(f_window<4300)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
-            Y_window[0] = self.baseLineRemove(Y_window[0]/np.amax(Y_window[0]))
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            P_window[0]=np.where(P_window[0]<0,P_window[0]+2*np.pi,P_window[0])
+            #P_window[0]=np.where(P_window[0]<-np.pi-1,P_window[0]+2*np.pi,P_window[0])
+            #P_window[0]=np.where(P_window[0]>np.pi-1,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
-            P_window[0] = np.where(Y_window[0]>0.05,P_window[0],np.inf)
+            omega = [1122,1284,1388,2244,3329,3648]
+            for om in omega:
+                if i>0:
+                    axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                else:
+                    axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
+                    axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
+                    if om==1594.43209:
+                        axF.text(x=om-70, y=1.8, s='Stretch',fontsize='8')
+                    if om==3655.52723:
+                        axF.text(x=om-70, y=1.8, s='Stretch',fontsize='8')
+            inter = 0
+            for w in omega:
+                inter = inter + np.where(np.abs(f_window-w)<10,P_window,0)
+            inter = np.where(inter==0,np.inf,inter)
+            P_window = inter
+            
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            axF.plot(f_window, Y_window[0], label=self.label[gas])
+            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), 'k', clip_on=True, label=label)
             #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
             #axF.plot(f_window, self.baseLineRemove(Y_window_im[0]/np.amax(Y_window[0])))#, label=label+'_im')
             if gas == 'Ch8':
-                peaks, _ = sps.find_peaks(Y_window[0],width=10,prominence=0.1,distance=1,height=0.1)
-                axF.plot(f_window[peaks],Y_window[0][peaks],'+r')
-                for peak in peaks:
-                    axF.text(f_window[peak],Y_window[0][peak]+0.05,str(int(f_window[peak])))
                 pass
             else:
-                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r')
+                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r',linewidth=2,label='Phase')
+                #axP.axhline(y=0.5, color='b', linestyle='--', label='Phase_aid')
+                #axP.axhline(y=1.5, color='b', linestyle='--')
+                pass
             #plot(f_window,P_window,'r')
             #axF.set_ylim([0,1])
             #axF.set_xlim([200,4500])
-            axP.set_ylim([-0.5,2.5])
-            axF.legend(loc=1,ncol=2,shadow=False,framealpha=0,scatterpoints=0)
+            axP.set_yticks([-1,-0.5,0,0.5,1])
+            axP.grid(visible=True,linestyle='--',linewidth='0.3',c='b')
+            axP.set_ylim([-1.3,1.3])
+            axP.legend(loc=(0.02,0.6),ncol=2,fontsize=10)
+            #axF.set_yscale('log')
+            #axF.set_ylim([10**-2.5,10**0])
+            axF.legend(loc=(0.02,0.8),ncol=2,fontsize=10)
+    
             i=i+1
             if ifsave:
                 self.wks.from_list(0, f_window, lname="Frequency", axis='X')
                 self.wks.from_list(i, np.abs(Y_window), lname=label, axis='Y')
 
         fig.tight_layout()
-        #plt.savefig(os.path.join(os.path.join(self.savePath,self.folder+'.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
+        #plt.savefig(os.path.join(os.path.join(self.savePath,r'fft_logy.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
+        #plt.savefig(os.path.join(os.path.join(self.savePath,r'fft.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
         plt.show()
 
     def show_Spectra(self, shift=0):
@@ -904,8 +931,9 @@ if __name__ == '__main__':
     #for ff in [name for name in os.listdir(directory)
     #        if os.path.isdir(os.path.join(directory, name))]:
     #    print(ff)
-    #for ff in [r'pu1.1E+15pr1.1E+15_CO2']:
-    for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#benging?
+    #for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
+    for ff in [r'pu1.1E+15pr1.1E+15_CO2',r'pu1.2E+15pr1.2E+15_CO2',r'pu1.2E+15pr1.3E+15_CO2',r'pu1.2E+15pr1.4E+15_CO2']:
+    #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#bending?
     #for ff in [r'pu1.2E+15pr2.2E+14_CO2',r'pu1.2E+15pr8.7E+14_CO2']:
         d = FFT_ionS(ff)
         if d.checkSavedData():
@@ -914,7 +942,7 @@ if __name__ == '__main__':
         d.transition()
         d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=False,test = False)
+        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
         d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
