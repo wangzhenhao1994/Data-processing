@@ -197,7 +197,7 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            data=sps.savgol_filter(data, window_length=20, polyorder=1,deriv=1,delta=1, mode='interp')
+            data=sps.savgol_filter(data, window_length=30, polyorder=1,deriv=1,delta=5, mode='interp')
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -701,8 +701,8 @@ class FFT_ionS():
             n=1
             self.phaseSpecBottleB[gas] = self.specBigBottleB[gas][-int(self.specBigBottleB[gas].shape[0]/n)*n:].reshape(int(self.specBigBottleB[gas].shape[0]/n), n, self.specBigBottleB[gas].shape[1]).sum(axis=1)
             self.specBigBottleB[gas] = self.specBigBottleB[gas].sum(axis = 0)#np.take(self.specBigBottleB[gas],[i for i in range(self.specBigBottleB[gas].shape[0]) if i not in self.goodSpecIndex],axis=0).sum(axis = 0)
-        #self.specBigBottleB['Ch4'] = self.specBigBottleB['Ch4']-self.specBigBottleB['Ch10']
-        #self.specBigBottleB['Ch6'] = self.specBigBottleB['Ch6']-self.specBigBottleB['Ch0']
+        self.specBigBottleB['Ch4'] = self.specBigBottleB['Ch4']-self.specBigBottleB['Ch10']
+        self.specBigBottleB['Ch6'] = self.specBigBottleB['Ch6']-self.specBigBottleB['Ch0']
         
         self.label = {}
         self.label['Ch2'] = 'Mass16'
@@ -775,7 +775,7 @@ class FFT_ionS():
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel("Frequency ($\mathrm{cm^{-1}}$)")
         plt.ylabel("Amplitude (a.u.)", labelpad=25)
-        plt.text(1.18,0.35,'Relative Phase v.s. Mass 18 ($\pi$)', rotation = 270)
+        plt.text(1.18,0.35,'Relative Phase v.s. Mass 44 ($\pi$)', rotation = 270)
         axPP = []
         for axx in ax.flatten():
             axPP = axPP + [axx.twinx()]
@@ -819,8 +819,8 @@ class FFT_ionS():
             
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
-            aa = len(f_window[(f_window<400)])
-            bb=len(f_window[(f_window<4300)])
+            aa = len(f_window[(f_window<100)])
+            bb=len(f_window[(f_window<3500)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
@@ -830,17 +830,22 @@ class FFT_ionS():
             #P_window[0]=np.where(P_window[0]<-np.pi-1,P_window[0]+2*np.pi,P_window[0])
             #P_window[0]=np.where(P_window[0]>np.pi-1,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
-            omega = [1122,1284,1388,2244,3329,3648]
+            omega = [1122,1285,1388,2244,3329,3648]
             for om in omega:
                 if i>0:
                     axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
                 else:
                     axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
-                    axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
-                    if om==1594.43209:
-                        axF.text(x=om-70, y=1.8, s='Stretch',fontsize='8')
-                    if om==3655.52723:
-                        axF.text(x=om-70, y=1.8, s='Stretch',fontsize='8')
+                    if om==1285:
+                        axF.text(x=om-70, y=1.2, s=str(int(om)),fontsize='8')
+                    else:
+                        axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
+                    if om==1122:
+                        axF.text(x=om-300, y=1.3, s='$\mathrm{CO_2^{2+}}$\n $\Sigma_g^+$ Sym str',fontsize='8')
+                    if om==1285:
+                        axF.text(x=om, y=1.3, s='$\mathrm{CO_2}$\n $\sigma_g^+$ Sym str',fontsize='8')
+                    #if om==1388:
+                    #    axF.text(x=om-70, y=1.3, s='CO_2 \sigma_g^+ Sym str',fontsize='8')
             inter = 0
             for w in omega:
                 inter = inter + np.where(np.abs(f_window-w)<10,P_window,0)
@@ -932,9 +937,9 @@ if __name__ == '__main__':
     #        if os.path.isdir(os.path.join(directory, name))]:
     #    print(ff)
     #for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
-    for ff in [r'pu1.1E+15pr1.1E+15_CO2',r'pu1.2E+15pr1.2E+15_CO2',r'pu1.2E+15pr1.3E+15_CO2',r'pu1.2E+15pr1.4E+15_CO2']:
-    #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#bending?
-    #for ff in [r'pu1.2E+15pr2.2E+14_CO2',r'pu1.2E+15pr8.7E+14_CO2']:
+    #for ff in [r'pu1.1E+15pr1.1E+15_CO2',r'pu1.2E+15pr1.2E+15_CO2',r'pu1.2E+15pr1.3E+15_CO2',r'pu1.2E+15pr1.4E+15_CO2']:
+    for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#bending?scan probe intensity
+    #for ff in [r'pu1.2E+15pr2.2E+14_CO2',r'pu1.2E+15pr8.7E+14_CO2']:#scan probe intensity
         d = FFT_ionS(ff)
         if d.checkSavedData():
             d.read()
