@@ -58,8 +58,8 @@ class FFT_ionS():
         '''
         
         self.filename = filename
-        self.channelSize = 1024
-        self.scanLength = 70000#72000
+        self.channelSize = 12032
+        self.scanLength = 3320#72000
         self.peakRange = [-15, 15]  # range of the peak
         self.delay = np.arange(self.scanLength)/self.scanLength*(116.7/119)*(119.5/120*99)*2*3.33564*10**-15
         self.rebin_delay = None
@@ -107,15 +107,15 @@ class FFT_ionS():
     def checkData(self):
         with h5py.File(self.filename, 'r+') as f:
             print(np.array(f['parameters']))
-            print(np.array(f['ppNum']))
-            print(f['data'].shape)
+            #print(np.array(f['ppNum']))
+            print(f['dataD'].shape)
             bigger = True
             i = 0
             while bigger:
                 try:
-                    a = f['data'][i*self.channelSize,0]
+                    a = f['dataD'][i*self.channelSize,0]
                     i+=1
-                except ValueError:
+                except IndexError:
                     bigger = False
                     self.scanNo = i
                     f.create_dataset('scanNo', data=i)
@@ -123,12 +123,12 @@ class FFT_ionS():
 
     def read_split(self, overNight = False, firstTry = False, sumNo = 20, usefulRange = [0, 5], cu = False):
         with h5py.File(self.filename, 'r+') as f:
-            #plt.plot(np.sum(np.array(f['data'][164*self.channelSize:(164+1)*self.channelSize]),0))
-            #print('the pump-only count is '+str(np.sum(np.array(f['data'][164*self.channelSize:(164+1)*self.channelSize]))/116.7),'\nthe probe-only count is '+str(np.sum(np.array(f['data'][165*self.channelSize:(165+1)*self.channelSize]))/116.7) )
+            #plt.plot(np.sum(np.array(f['dataD'][164*self.channelSize:(164+1)*self.channelSize]),0))
+            #print('the pump-only count is '+str(np.sum(np.array(f['dataD'][164*self.channelSize:(164+1)*self.channelSize]))/116.7),'\nthe probe-only count is '+str(np.sum(np.array(f['dataD'][165*self.channelSize:(165+1)*self.channelSize]))/116.7) )
             #plt.show()
             print(f.keys())
-            print(np.array(f['ppNum']))
-            self.spec=np.array(f['spectrumLog'])
+            #print(np.array(f['ppNum']))
+            #self.spec=np.array(f['spectrumLog'])
             dataSet_created={}
             if ('scanNo' in f):
                 self.scanNo = np.array(f['scanNo'], dtype=int)
@@ -151,7 +151,7 @@ class FFT_ionS():
                     for i in range(dataSet_created[s][1],dataSet_created[s][0],-1):
                         try:
                             data = data + \
-                                np.array(f['data'][i*self.channelSize:(i+1)*self.channelSize])
+                                np.array(f['dataD'][i*self.channelSize:(i+1)*self.channelSize])
                         except ValueError:
                             break
                     try:
@@ -466,9 +466,9 @@ if __name__ == '__main__':
         dataPath = r'/mnt/c/Users/user/Desktop/Data_newTOF'
         dataPath = pl.PurePath(dataPath)
     else:
-        dataPath = r'C:\Users\user\Desktop\Data_newTOF'
+        dataPath = r'D:\DataProcessing'
         dataPath = pl.PureWindowsPath(dataPath)
-    yearAndMonth = r'2021-12'
+    yearAndMonth = r'2022-07'
     
     
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-10-11', r'scan_tof_2021-10-11-23-23-40', False, 20, [5,11], True]#120-120 80 Ar
@@ -583,8 +583,9 @@ if __name__ == '__main__':
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-12-08', r'scan_tof_2021-12-08-13-39-54', False, 29, [0,1], False]#80-80 nothing
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-12-08', r'scan_tof_2021-12-08-15-05-51', False, 25, [0,1], False]#90-80 strong signal
     #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-12-08', r'scan_tof_2021-12-08-16-28-20', False, 29, [0,1], False]#90-80 NOTHING HIGH COUNTS
-    date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-12-08', r'scan_tof_2021-12-08-17-59-46', False, 29, [0,1], False]#90-80 
-    #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-12-08', r'scan_tof_2021-12-08-20-07-02', False, 20, [0,10], False]#90-80  
+    #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-12-08', r'scan_tof_2021-12-08-17-59-46', False, 29, [0,1], False]#90-80 
+    #date, filename, firstTry, sumNo, usefulRange, cu = [r'2021-12-08', r'scan_tof_2021-12-08-20-07-02', False, 20, [0,10], False]#90-80
+    date, filename, firstTry, sumNo, usefulRange, cu = [r'2022-07-27', r'scan_tof_2022-07-27-18-33-55', False, 50, [0,1], False]#90-80 
     
     
 
@@ -602,12 +603,12 @@ if __name__ == '__main__':
     for x in ff:
         x.read_split(overNight = True, firstTry =firstTry, sumNo = sumNo, usefulRange = usefulRange, cu=cu)
         #check the spectrum
-        for i in range(0,4):
-           plt.plot(x.spec[i],label=str(i))
-           np.savetxt('spec.txt',x.spec[i])
-        plt.plot(x.spec[0],label=str(0))
-        plt.legend()
-        plt.show()
+        #for i in range(0,4):
+        #   plt.plot(x.spec[i],label=str(i))
+        #   np.savetxt('spec.txt',x.spec[i])
+        #plt.plot(x.spec[0],label=str(0))
+        #plt.legend()
+        #plt.show()
         plt.plot(np.arange(x.data.shape[0]),np.sum(x.data,1))
         #plt.plot(cal.pixel2mass(np.arange(sum.shape[0])),np.sum(sum[:,int(140/660*sum.shape[1]):],1),label='Mass[100,600]')
         #plt.plot(np.arange(sum.shape[0]),np.sum(sum[:,int(140/660*sum.shape[1]):],1),label='Mass[100,600]')

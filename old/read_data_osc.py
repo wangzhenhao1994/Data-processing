@@ -115,7 +115,7 @@ class FFT_ionS():
             i = 0
             while bigger:
                 try:
-                    a = f['data'][i*self.channelSize,0]
+                    a = f['dataD'][i*self.channelSize,0]
                     i+=1
                 except ValueError:
                     bigger = False
@@ -126,7 +126,7 @@ class FFT_ionS():
     def read_split(self, overNight = False, firstTry = False, sumNo = 20, usefulRange = [0, 5], cu = False):
         with h5py.File(self.filename, 'r+') as f:
             print(f.keys())
-            self.spec=np.array(f['spectrumLog'])
+            #self.spec=np.array(f['spectrumLog'])
             dataSet_created={}
             if ('scanNo' in f):
                 self.scanNo = np.array(f['scanNo'], dtype=int)
@@ -149,7 +149,7 @@ class FFT_ionS():
                     for i in range(dataSet_created[s][1],dataSet_created[s][0],-1):
                         try:
                             data = data + \
-                                np.array(f['data'][i*self.channelSize:(i+1)*self.channelSize])
+                                np.array(f['dataD'][i*self.channelSize:(i+1)*self.channelSize])
                         except ValueError:
                             break
                     try:
@@ -459,28 +459,28 @@ class FFTOSC(FFT_ionS):
 if __name__ == '__main__':
     
     dataPath = pl.PureWindowsPath(
-        r'C:\Users\user\Desktop\Data_newTOF\2021-12\2021-12-19')
+        r'D:\DataProcessing\2022-07\2022-07-27')
     
-    datafile =  os.path.join(dataPath, r'scan_tof_2021-12-19-18-14-47.hdf5') #70-90 time:10
-    #datafile2 =  os.path.join(dataPath, r'scan_tof_2021-12-19-19-38-40.hdf5') #75-90 time:10
-    datafile3 =  os.path.join(dataPath, r'scan_tof_2021-12-19-22-50-06.hdf5') #80-90 time:10
-    datafile4 =  os.path.join(dataPath, r'scan_tof_2021-12-20-09-44-01.hdf5') #90-90 time:10
-    datafile5 =  os.path.join(dataPath, r'scan_tof_2021-12-20-11-17-06.hdf5') #100-90 time:10
-    datafile5_2 =  os.path.join(dataPath, r'scan_tof_2021-12-20-12-56-02.hdf5') #100-90 time:16
+    #datafile =  os.path.join(dataPath, r'scan_tof_2021-12-19-18-14-47.hdf5') #70-90 time:10
+    ##datafile2 =  os.path.join(dataPath, r'scan_tof_2021-12-19-19-38-40.hdf5') #75-90 time:10
+    #datafile3 =  os.path.join(dataPath, r'scan_tof_2021-12-19-22-50-06.hdf5') #80-90 time:10
+    #datafile4 =  os.path.join(dataPath, r'scan_tof_2021-12-20-09-44-01.hdf5') #90-90 time:10
+    #datafile5 =  os.path.join(dataPath, r'scan_tof_2021-12-20-11-17-06.hdf5') #100-90 time:10
+    #datafile5_2 =  os.path.join(dataPath, r'scan_tof_2021-12-20-12-56-02.hdf5') #100-90 time:16
     
-    datafile6 =  os.path.join(dataPath, r'scan_tof_2021-12-20-00-18-25.hdf5') #110-90 time:10
+    datafile6 =  os.path.join(dataPath, r'scan_tof_2022-07-27-12-17-05.hdf5') #110-90 time:10
     
 
     
     
-    #f = FFT_ionS(filename=datafile, scanTime=200, sampRate=1000, dcRange=2, massRange=[5,50])#longstage
-    f = FFT_ionS(filename=[datafile], scanTime=10, label="70pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
-    #f2 = FFT_ionS(filename=[datafile2], scanTime=10, sampRate=1000, dcRange=2, massRange=[5,50])
-    f3 = FFT_ionS(filename=[datafile3], scanTime=10, label="80pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
-    f4 = FFT_ionS(filename=[datafile4], scanTime=10, label="90pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
-    f5 = FFT_ionS(filename=[datafile5], scanTime=10, label="100pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
-    f5_2 = FFT_ionS(filename=[datafile5_2], scanTime=16, sampRate=1000, dcRange=2, massRange=[5,50])
-    f6 = FFT_ionS(filename=[datafile6], scanTime=10, label="110pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
+    ##f = FFT_ionS(filename=datafile, scanTime=200, sampRate=1000, dcRange=2, massRange=[5,50])#longstage
+    #f = FFT_ionS(filename=[datafile], scanTime=10, label="70pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
+    ##f2 = FFT_ionS(filename=[datafile2], scanTime=10, sampRate=1000, dcRange=2, massRange=[5,50])
+    #f3 = FFT_ionS(filename=[datafile3], scanTime=10, label="80pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
+    #f4 = FFT_ionS(filename=[datafile4], scanTime=10, label="90pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
+    #f5 = FFT_ionS(filename=[datafile5], scanTime=10, label="100pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
+    #f5_2 = FFT_ionS(filename=[datafile5_2], scanTime=16, sampRate=1000, dcRange=2, massRange=[5,50])
+    f6 = FFT_ionS(filename=datafile6, scanTime=10, label="110pp90pr", sampRate=1000, dcRange=2, massRange=[5,50])
     
 
     ff=[f6]
@@ -488,17 +488,18 @@ if __name__ == '__main__':
 
     for x in ff:
         x.spectraBottle['H2O+'] = 0
+        x.read_split()
         for file in x.filename:
             with h5py.File(file, 'r+') as f:
                 print(f.keys())
                 #print(f['parameters'].value)
-                print(f['data'].shape)
-                x.spectraBottle['H2O+'] = x.spectraBottle['H2O+']+np.sum(np.array(f['data'], dtype=float),axis=0)
+                print(f['dataD'].shape)
+                x.spectraBottle['H2O+'] = x.spectraBottle['H2O+']+np.sum(np.array(f['dataD'], dtype=float),axis=0)
                 x.spectraBottle['H2O+'] = x.spectraBottle['H2O+']
                 print(x.spectraBottle['H2O+'].shape)
         
         x.window(windowSize=50, direction='left')
-        pnf.naff(signal, 500, 1, 0 , False)
+        #pnf.naff(signal, 500, 1, 0 , False)
         #x.smooth(windowSize=21)
         #x.rmvExp()
         #x.rebinS(factor=10)

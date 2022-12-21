@@ -20,8 +20,6 @@ import pathlib as pl
 import os
 from math import ceil, pi, sqrt, log 
 import pickle
-from brokenaxes import brokenaxes
-from adjustText import adjust_text
 #from pynufft import NUFFT
 from cal_intensity import cal_intensity
 from decimal import Decimal
@@ -75,7 +73,7 @@ class FFT_ionS():
         '''
         self.filename = filename
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF')
+        self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing')
         
         self.peakRange = [-15, 15]  # range of the peak
         
@@ -802,50 +800,54 @@ class FFT_ionS():
 if __name__ == '__main__':
 
     #####Hydrogen
-    filename0 = [r'scan_tof_2022-03-30-16-36-57']#600 fs 1fs step 1s integration time 100-100
-    filename1 = [r'scan_tof_2022-03-30-13-54-55']#50ps 6.6fs step 1s integration time 100-100
+    #filename0 = [r'scan_tof_2022-03-30-16-36-57']#600 fs 1fs step 1s integration time 100-100
+    #filename1 = [r'scan_tof_2022-03-30-13-54-55']#50ps 6.6fs step 1s integration time 100-100
+#
+    #filename2 = [r'scan_tof_2022-03-30-17-47-25']#600 fs 1fs step 1s integration time 140-140
+    #filename3 = [r'scan_tof_2022-03-30-18-31-33']#50ps 6.6fs step 1s integration time 140-140
+#
+    #filename4 = [r'scan_tof_2022-03-29-21-34-04']#600 fs 1fs step 1s integration time 180-170
+    #filename5 = [r'scan_tof_2022-03-29-18-42-52']#50ps 6.6fs step 1s integration time 180-170
+    #
+    #filename6 = [r'scan_tof_2022-03-30-10-06-57']#600 fs 1fs step 1s integration time 230-210
+    #filename7 = [r'scan_tof_2022-03-29-16-00-04']#50ps 6.6fs step 1s integration time 230-210
+    #
+    ######Water
+    #filename8 = [r'scan_tof_2022-03-31-22-18-04']#600 fs 1fs step 1s integration time 240-220
+    #filename9 = [r'scan_tof_2022-03-31-23-35-11']#50ps 6.6fs step 1s integration time 240-220
+#
+    #filename10 = [r'scan_tof_2022-04-05-10-30-04']#600 fs 1fs step 1s integration time 240-220
+#
+    ##04302022
+    #filename11 = [r'scan_tof_2022-04-30-18-10-19']#600 fs 1fs step 1s integration time 240-220
 
-    filename2 = [r'scan_tof_2022-03-30-17-47-25']#600 fs 1fs step 1s integration time 140-140
-    filename3 = [r'scan_tof_2022-03-30-18-31-33']#50ps 6.6fs step 1s integration time 140-140
-
-    filename4 = [r'scan_tof_2022-03-29-21-34-04']#600 fs 1fs step 1s integration time 180-170
-    filename5 = [r'scan_tof_2022-03-29-18-42-52']#50ps 6.6fs step 1s integration time 180-170
-    
-    filename6 = [r'scan_tof_2022-03-30-10-06-57']#600 fs 1fs step 1s integration time 230-210
-    filename7 = [r'scan_tof_2022-03-29-16-00-04']#50ps 6.6fs step 1s integration time 230-210
-    
-    #####Water
-    filename8 = [r'scan_tof_2022-03-31-22-18-04']#600 fs 1fs step 1s integration time 240-220
-    filename9 = [r'scan_tof_2022-03-31-23-35-11']#50ps 6.6fs step 1s integration time 240-220
-
-    filename10 = [r'scan_tof_2022-04-05-10-30-04']#600 fs 1fs step 1s integration time 240-220
-
-    #04302022
-    filename11 = [r'scan_tof_2022-04-30-18-10-19']#600 fs 1fs step 1s integration time 240-220
+    filnameCO2 = [r'scan_tof_2022-07-27-11-07-01']
     
     
     
     
     
     
-    
-
-    
-    f0 = FFT_ionS(filename=filename0, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(100,14.5,5), dcRange=2)
-    f1 = FFT_ionS(filename=filename1, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(100,14.5,5), dcRange=2)
-    f2 = FFT_ionS(filename=filename2, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(140,12,5), dcRange=2)
-    f3 = FFT_ionS(filename=filename3, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(140,12,5), dcRange=2)
-    f4 = FFT_ionS(filename=filename4, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(180,10,5), dcRange=2)
-    f5 = FFT_ionS(filename=filename5, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(180,10,5), dcRange=2)
-    f6 = FFT_ionS(filename=filename6, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(240,8.5,5), dcRange=2)
-    f7 = FFT_ionS(filename=filename7, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(240,8.5,5), dcRange=2)
-    f10 = FFT_ionS(filename=filename10, stage='piezo', stepSize=1*1e-15, molecule='H2O', intensity=cal_intensity(230,8.5,5), dcRange=2)
-    f11 = FFT_ionS(filename=filename11, stage='piezo', stepSize=1*1e-15, molecule='H2O', intensity=cal_intensity(230,8.5,5), dcRange=2)
     
 
+    
+    #f0 = FFT_ionS(filename=filename0, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(100,14.5,5), dcRange=2)
+    #f1 = FFT_ionS(filename=filename1, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(100,14.5,5), dcRange=2)
+    #f2 = FFT_ionS(filename=filename2, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(140,12,5), dcRange=2)
+    #f3 = FFT_ionS(filename=filename3, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(140,12,5), dcRange=2)
+    #f4 = FFT_ionS(filename=filename4, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(180,10,5), dcRange=2)
+    #f5 = FFT_ionS(filename=filename5, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(180,10,5), dcRange=2)
+    #f6 = FFT_ionS(filename=filename6, stage='piezo', stepSize=1*1e-15, molecule='H2', intensity=cal_intensity(240,8.5,5), dcRange=2)
+    #f7 = FFT_ionS(filename=filename7, stage='long', stepSize=3.33564*2*1e-15, molecule='H2', intensity=cal_intensity(240,8.5,5), dcRange=2)
+    #f10 = FFT_ionS(filename=filename10, stage='piezo', stepSize=1*1e-15, molecule='H2O', intensity=cal_intensity(230,8.5,5), dcRange=2)
+    #f11 = FFT_ionS(filename=filename11, stage='piezo', stepSize=1*1e-15, molecule='H2O', intensity=cal_intensity(230,8.5,5), dcRange=2)
+
+    fCO2 = FFT_ionS(filename=filnameCO2, stage='piezo', stepSize=0.3*1e-15, molecule='H2O', intensity=cal_intensity(230,8.5,5), dcRange=2)
+    
 
 
-    ff=[f11]
+
+    ff=[fCO2]
 
     for x in ff:
         x.pathFinder()

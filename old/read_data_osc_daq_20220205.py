@@ -1,7 +1,5 @@
 from operator import xor
 from pickle import FALSE
-import matlab.engine
-import matlab
 from matplotlib.colors import Normalize
 from matplotlib import cm
 from matplotlib import gridspec
@@ -21,7 +19,6 @@ import pathlib as pl
 import os
 from math import ceil, pi, sqrt, log 
 import pickle
-from brokenaxes import brokenaxes
 #from pynufft import NUFFT
 
 my_path = os.path.abspath(__file__)
@@ -73,7 +70,7 @@ class FFT_ionS():
         '''
         self.filename = filename
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF')
+        self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing')
         self.channelSize = 1024
         self.scanTime = scanTime
         self.trueScanTime = ceil(self.scanTime/1.6)*1.6
@@ -702,7 +699,7 @@ if __name__ == '__main__':
     #datafile3 =  os.path.join(rootPath, dataPath3, r'scan_tof_2021-12-29-20-08-47')#190-180-16
     #datafile4 =  os.path.join(rootPath, dataPath4, r'scan_tof_2022-01-26-13-59-18')
     filename0 = [r'scan_tof_2022-02-05-17-40-32']
-    filename1 = [r'scan_tof_2022-02-05-19-06-18']
+    filename1 = [r'scan_tof_2022-07-26-13-53-00']
     
 
     
