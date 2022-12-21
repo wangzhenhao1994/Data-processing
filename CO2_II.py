@@ -601,20 +601,20 @@ class FFT_ionS():
             t=t+self.windowSize*self.stepSize
             self.stftSBFre = f
             self.stftSBDelay = t
-            #vmax=abs(self.stftSB[gas][0:int(len(f)/10)]).max()*ratio
-            #vmin=abs(self.stftSB[gas]).min()*ratio
-            vmax=2*np.pi+0.5
-            vmin=-0.5
-            #norm = cm.colors.Normalize(vmax=vmax, vmin=vmin)
+            vmax=abs(self.stftSB[gas][int(len(f)/30):]).max()*ratio
+            vmin=abs(self.stftSB[gas]).min()*ratio
+            #vmax=2*np.pi+0.5
+            #vmin=-0.5
+            norm = cm.colors.Normalize(vmax=vmax, vmin=vmin)
             levels = np.arange(vmin,vmax,(vmax-vmin)/10)
-            #im=ax.contourf(t*10**15, f/10**12*33.35641,
-            #               np.abs(self.stftSB[gas]), levels=levels, cmap='jet', norm=norm)
             im=ax.contourf(t*10**15, f/10**12*33.35641,
-                           np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']), levels=levels, cmap='jet')
+                           np.abs(self.stftSB[gas]), levels=levels, cmap='jet', norm=norm)
+            #im=ax.contourf(t*10**15, f/10**12*33.35641,
+            #               np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']), levels=levels, cmap='jet')
             ax_histx.plot(t*10**15, np.sum(np.abs(self.stftSB[gas]),axis=0))
             ax_histx.set_xticklabels([])
-            #ax_histy.plot(np.mean(np.abs(self.stftSB[gas]),axis=1),f/10**12*33.35641)
-            ax_histy.plot(np.mean(np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']),axis=1),f/10**12*33.35641)
+            ax_histy.plot(np.mean(np.abs(self.stftSB[gas]),axis=1),f/10**12*33.35641)
+            #ax_histy.plot(np.mean(np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']),axis=1),f/10**12*33.35641)
             #plt.xlim([100, self.delayB[-1]])
             ax_histy.set_ylim([200, 4500])
             ax.set_ylabel('Frequency [cm-1]')
@@ -805,15 +805,23 @@ class FFT_ionS():
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
 
             P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
-            
+            omega = [1122,1285,1388,2244,3329,3648]#
             if gas == 'Ch8':
                 P_ref = P_inter
                 P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             else:
                 P_inter = P_inter-P_ref
-                #for n in range(np.shape(P_inter)[0]):
-                #    P_inter[n]=np.where(P_inter[n]>2*np.pi-2, P_inter[n]-2*np.pi, P_inter[n])
+                #P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
+                #P_inter=np.where(np.logical_and(np.abs(P_inter)>np.pi/3,P_inter>np.pi), P_inter-2*np.pi, P_inter)
+                for n in range(np.shape(P_inter)[0]):
+                    P_inter[n]=np.where(P_inter[n], P_inter+2*np.pi, P_inter)
 
+                #if gas =='Ch4':
+                #    for n in range(np.shape(P_inter)[0]):
+                #        plt.plot(f_window,P_inter[n],label=str(n))
+                #    plt.xlim([100,4000])
+                #    #plt.legend()
+                #    plt.show()
                 P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
 
             
@@ -830,7 +838,7 @@ class FFT_ionS():
             #P_window[0]=np.where(P_window[0]<-np.pi-1,P_window[0]+2*np.pi,P_window[0])
             #P_window[0]=np.where(P_window[0]>np.pi-1,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
-            omega = [1122,1285,1388,2244,3329,3648]
+            omega = [1122,1285,1388,2244,3648]#3329
             for om in omega:
                 if i>0:
                     axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
@@ -936,9 +944,9 @@ if __name__ == '__main__':
     #for ff in [name for name in os.listdir(directory)
     #        if os.path.isdir(os.path.join(directory, name))]:
     #    print(ff)
-    #for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
+    for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
     #for ff in [r'pu1.1E+15pr1.1E+15_CO2',r'pu1.2E+15pr1.2E+15_CO2',r'pu1.2E+15pr1.3E+15_CO2',r'pu1.2E+15pr1.4E+15_CO2']:
-    for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#bending?scan probe intensity
+    #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#bending?scan probe intensity
     #for ff in [r'pu1.2E+15pr2.2E+14_CO2',r'pu1.2E+15pr8.7E+14_CO2']:#scan probe intensity
         d = FFT_ionS(ff)
         if d.checkSavedData():
@@ -953,7 +961,7 @@ if __name__ == '__main__':
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)
         #d.rebinS(5)
-        #d.window(windowSize=200,useWindow=False)
+        #d.window(windowSize=90,useWindow=False)
         #d.STFTS(gas='rebin_Ch8',windowsize=400)
         #d.STFTS(gas='rebin_Ch0',windowsize=400)
         #d.STFTS2(windowsize=182.5*2)
