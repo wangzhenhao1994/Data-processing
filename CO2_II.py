@@ -422,7 +422,7 @@ class FFT_ionS():
 
             _ref = indexMax[int(self.specBigBottleB[gas].shape[0]/2)]
             _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/20000
-            for i in range(self.interSpectraBottleB[gas].shape[0]):
+            for i in range(self.specBigBottleB[gas].shape[0]):
                 _inter=iS.ev(i,_delayRange+_shift[i])
                 plt.plot(_delayRange,_inter)
             plt.xlabel('Delay (fs)')
@@ -440,7 +440,8 @@ class FFT_ionS():
                 _inter=iS.ev(i,_delayRange)
                 plt.plot(_delayRange,_inter)
                 #indexMax = indexMax + [sps.argrelextrema(_inter, np.greater)[0][-1]]
-                indexMax = indexMax + [np.argmax(_inter)]
+                indexMax = indexMax + [np.argmax(np.abs(_inter))]
+            print(indexMax)
             plt.xlabel('Delay (fs)')
             plt.ylabel('a.u.')
             plt.show()
@@ -455,7 +456,7 @@ class FFT_ionS():
             plt.show()
         return _shift
 
-    def delayCorrection(self, _cRange = [0,150]):
+    def delayCorrection(self, _cRange = [20,130]):
         xxx = 0
         while True:
             try:
@@ -799,7 +800,7 @@ class FFT_ionS():
             label=lab[i]
             f_window = self.fftSB[_preP+'fre']
             Y = np.array([np.mean(self.fftSB[_preP+gas+'_fft'],axis=0), np.std(self.fftSB[_preP+gas+'_fft'],axis=0)])
-            Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
+            Y_window = np.array([np.abs(np.mean(self.fftSB[_preP+gas+'_fft'],axis=0)),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
@@ -813,10 +814,9 @@ class FFT_ionS():
                 P_inter = P_inter-P_ref
                 #P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
                 #P_inter=np.where(np.logical_and(np.abs(P_inter)>np.pi/3,P_inter>np.pi), P_inter-2*np.pi, P_inter)
-                for n in range(np.shape(P_inter)[0]):
-                    P_inter[n]=np.where(P_inter[n], P_inter+2*np.pi, P_inter)
+                #P_inter=np.where(P_inter<-np.pi, P_inter+2*np.pi, P_inter)
 
-                #if gas =='Ch4':
+                #if gas =='Ch6':
                 #    for n in range(np.shape(P_inter)[0]):
                 #        plt.plot(f_window,P_inter[n],label=str(n))
                 #    plt.xlim([100,4000])
@@ -835,7 +835,7 @@ class FFT_ionS():
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            #P_window[0]=np.where(P_window[0]<-np.pi-1,P_window[0]+2*np.pi,P_window[0])
+            #P_window[0]=np.where(P_window[0]<-np.pi+1,P_window[0]+2*np.pi,P_window[0])
             #P_window[0]=np.where(P_window[0]>np.pi-1,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
             omega = [1122,1285,1388,2244,3648]#3329
@@ -899,7 +899,7 @@ class FFT_ionS():
         #gs = gridspec.GridSpec(1, 1)
         fig = plt.figure(figsize=(20,8))
         #ax = fig.add_subplot(111)
-        lab=['Mass1','Mass2','Mass16','Mass17','Mass18','Ch2+Ch4','Mass1+Mass16', 'Mass1+Mass17', 'Mass16+Mass17','Mass17+Mass18']
+        lab=['Mass16','Mass22','Mass28','Mass44']
         i=0
         if ifsaveT:
             self.wks = op.new_sheet('w',lname=str('Time')+str('_')+self.molecule+str('_')+self.folder)
@@ -907,7 +907,7 @@ class FFT_ionS():
             print(gas)
             if 'filter' in gas or 'window' in gas or 'rebin' in gas or 'com' in gas:
                 continue
-            if gas in ['Ch0','Ch2','Ch4','Ch6','Ch8','Ch10']:
+            if gas in ['Ch2','Ch4','Ch6','Ch8']:
                 pass
             else:
                 print('Skip!')
@@ -955,13 +955,13 @@ if __name__ == '__main__':
         d.transition()
         d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
+        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=False,test = False)
         d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)
         #d.rebinS(5)
-        #d.window(windowSize=90,useWindow=False)
-        #d.STFTS(gas='rebin_Ch8',windowsize=400)
+        #d.window(windowSize=200,useWindow=False)
+        #d.STFTS(gas='rebin_Ch6',windowsize=400)
         #d.STFTS(gas='rebin_Ch0',windowsize=400)
         #d.STFTS2(windowsize=182.5*2)
