@@ -447,7 +447,7 @@ class FFT_ionS():
     
             _ref = indexMax[int(self.specBigBottleB[gas].shape[0]/2)]
             _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/20000
-            for i in range(self.interSpectraBottleB[gas].shape[0]):
+            for i in range(self.specBigBottleB[gas].shape[0]):
                 _inter=iS.ev(i,_delayRange+_shift[i])
                 plt.plot(_delayRange,_inter)
             plt.xlabel('Delay (fs)')

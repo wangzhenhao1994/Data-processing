@@ -836,7 +836,7 @@ class FFT_ionS():
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
             #P_window[0]=np.where(P_window[0]<-np.pi+1,P_window[0]+2*np.pi,P_window[0])
-            #P_window[0]=np.where(P_window[0]>np.pi-1,P_window[0]-2*np.pi,P_window[0])
+            P_window[0]=np.where(P_window[0]>np.pi,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
             omega = [1122,1285,1388,2244,3648]#3329
             for om in omega:
@@ -944,8 +944,8 @@ if __name__ == '__main__':
     #for ff in [name for name in os.listdir(directory)
     #        if os.path.isdir(os.path.join(directory, name))]:
     #    print(ff)
-    for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
-    #for ff in [r'pu1.1E+15pr1.1E+15_CO2',r'pu1.2E+15pr1.2E+15_CO2',r'pu1.2E+15pr1.3E+15_CO2',r'pu1.2E+15pr1.4E+15_CO2']:
+    #for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
+    for ff in [r'pu3.6E+14pr2.1E+14_CO2']:
     #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#bending?scan probe intensity
     #for ff in [r'pu1.2E+15pr2.2E+14_CO2',r'pu1.2E+15pr8.7E+14_CO2']:#scan probe intensity
         d = FFT_ionS(ff)
