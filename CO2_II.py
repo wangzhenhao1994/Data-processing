@@ -74,9 +74,15 @@ class FFT_ionS():
         self.saveRef = str(filename)
         self.filepath = []
         self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing\CO2')
+        
+        
         #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
         #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\CO2',folder))
+        #self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\CO2',folder))
+        #self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\CO2\pu9.2E+13_scanProbe',folder))
+        #self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\CO2\pu7.7E+14_scanProbe',folder))
+        #self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\CO2\pu5.2E+14_scanProbe',folder))
+        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\CO2\pu4.0E+14_scanProbe',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -788,12 +794,15 @@ class FFT_ionS():
             self.wks = op.new_sheet('w',lname=str('FFT')+str('_')+self.folder)
 
         _preP = 'window'+'_'
+        self.result = {}
+        self.result['phase'] = {}
+        self.result['amplitude'] = {}
         for gas in ['Ch8','Ch2','Ch4','Ch6']:
             if 'filter' in gas  or 'window' in gas or 'rebin' in gas or 'com' in gas:
                 continue
             elif gas not in ['Ch8','Ch2','Ch4','Ch6']:
                 continue
-            
+
             axF=ax[i]
             axP = axPP[i]
             #axP.set_ylim([-np.pi,np.pi])
@@ -806,23 +815,25 @@ class FFT_ionS():
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
 
             P_inter = np.angle(self.fftSB[_preP+gas+'_fft'])
-            omega = [1122,1285,1388,2244,3329,3648]#
+            omega = [1122,1285,1388,3329]#2244,
             if gas == 'Ch8':
                 P_ref = P_inter
                 P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             else:
                 P_inter = P_inter-P_ref
                 #P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
-                #P_inter=np.where(np.logical_and(np.abs(P_inter)>np.pi/3,P_inter>np.pi), P_inter-2*np.pi, P_inter)
+                P_inter=np.where(np.logical_and(1,P_inter>np.pi-1.5), P_inter-2*np.pi, P_inter)
+                #P_inter=np.where(np.logical_and(1,P_inter<-np.pi+1.5), P_inter+2*np.pi, P_inter)
                 #P_inter=np.where(P_inter<-np.pi, P_inter+2*np.pi, P_inter)
 
-                #if gas =='Ch6':
+                #if gas =='Ch4':
                 #    for n in range(np.shape(P_inter)[0]):
                 #        plt.plot(f_window,P_inter[n],label=str(n))
                 #    plt.xlim([100,4000])
                 #    #plt.legend()
                 #    plt.show()
-                P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
+                P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2)])
+                #P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
 
             
             #aa = len(f_window[(f_window<100)])
@@ -835,10 +846,11 @@ class FFT_ionS():
             Y_window_im = Y_window_im[:,aa:bb]
             Y_window_re = Y_window_re[:,aa:bb]
             P_window = P_window[:,aa:bb]
-            #P_window[0]=np.where(P_window[0]<-np.pi+1,P_window[0]+2*np.pi,P_window[0])
-            P_window[0]=np.where(P_window[0]>np.pi,P_window[0]-2*np.pi,P_window[0])
+            #P_window[0]=np.where(P_window[0]<-np.pi+2,P_window[0]+2*np.pi,P_window[0])
+            P_window[0]=np.where(P_window[0]>np.pi-1,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
-            omega = [1122,1285,1388,2244,3648]#3329
+            self.result['phase'][gas] = P_window
+            omega = [1122,1285,1388,2244,2761,3329]
             for om in omega:
                 if i>0:
                     axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
@@ -862,6 +874,7 @@ class FFT_ionS():
             
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
             axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), 'k', clip_on=True, label=label)
+            self.result['amplitude'][gas] = self.baseLineRemove(Y_window[0]/np.amax(Y_window[0]))
             #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
             #axF.plot(f_window, self.baseLineRemove(Y_window_re[0]/np.amax(Y_window[0])))#, label=label+'_re')
@@ -888,7 +901,7 @@ class FFT_ionS():
             if ifsave:
                 self.wks.from_list(0, f_window, lname="Frequency", axis='X')
                 self.wks.from_list(i, np.abs(Y_window), lname=label, axis='Y')
-
+        save_obj(self.result, pl.PureWindowsPath(self.savePath, self.folder+'_result'+r'.pkl'))
         fig.tight_layout()
         #plt.savefig(os.path.join(os.path.join(self.savePath,r'fft_logy.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
         #plt.savefig(os.path.join(os.path.join(self.savePath,r'fft.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
@@ -940,14 +953,16 @@ class FFT_ionS():
         plt.show()
 
 if __name__ == '__main__':
-    directory = os.path.abspath(r'D:\DataProcessing\CO2')
+    #directory = os.path.abspath(r'D:\DataProcessing\CO2')
     #for ff in [name for name in os.listdir(directory)
     #        if os.path.isdir(os.path.join(directory, name))]:
     #    print(ff)
+
     #for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
-    for ff in [r'pu3.6E+14pr2.1E+14_CO2']:
-    #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:#bending?scan probe intensity
-    #for ff in [r'pu1.2E+15pr2.2E+14_CO2',r'pu1.2E+15pr8.7E+14_CO2']:#scan probe intensity
+    #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:
+    #for ff in [r'pu7.7E+14pr3.7E+14_CO2',r'pu7.7E+14pr6.1E+14_CO2',r'pu7.6E+14pr9.3E+14_CO2',r'pu7.6E+14pr1.4E+15_CO2']:#bending?scan probe intensity
+    #for ff in [r'pu4.7E+14pr8.2E+13_CO2',r'pu5.2E+14pr2.6E+14_CO2',r'pu5.2E+14pr4.2E+14_CO2',r'pu5.2E+14pr6.5E+14_CO2',r'pu5.6E+14pr1.0E+15_CO2',r'pu5.4E+14pr1.5E+15_CO2']:#scan probe intensity
+    for ff in [r'pu4.0E+14pr3.8E+14_CO2',r'pu4.0E+14pr6.2E+14_CO2',r'pu4.0E+14pr9.7E+14_CO2',r'pu4.0E+14pr1.4E+15_CO2']:#
         d = FFT_ionS(ff)
         if d.checkSavedData():
             d.read()
