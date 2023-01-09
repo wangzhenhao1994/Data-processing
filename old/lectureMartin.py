@@ -18,7 +18,10 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 x=np.arange(-60,60,0.01)
 sigma = 30/2/np.sqrt(2*np.log(2))
-y=np.exp(-x*x/2/sigma/sigma)#*np.cos(x/2.6*np.pi*2)
+#y=np.exp(-x*x/2/sigma/sigma)#*np.cos(x/2.6*np.pi*2)
+y=np.cos(x*np.pi*2)
+plt.plot(y)
+plt.show()
 dy=x/sigma/sigma*np.exp(-x*x/2/sigma/sigma)
 
 fig = plt.figure()
