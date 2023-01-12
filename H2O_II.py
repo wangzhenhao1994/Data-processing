@@ -257,8 +257,10 @@ class FFT_ionS():
         '''
         #windowSize = windowSize+np.abs(self.delayB[0])*1e15 #????????????????????????
         for gas in list(self.specBigBottleB):
-            self.specBigBottleB[gas], self.specBigBottleB['window_'+gas], self.delayB = self.inter_window(self.specBigBottleB[gas], self.delayB, windowSize=windowSize, direction=direction, useWindow=useWindow)
-           
+            if 'rebin' not in gas:
+                self.specBigBottleB[gas], self.specBigBottleB['window_'+gas], self.delayB = self.inter_window(self.specBigBottleB[gas], self.delayB, windowSize=windowSize, direction=direction, useWindow=useWindow)
+            else:
+                self.specBigBottleB[gas], self.specBigBottleB['window_'+gas], self.rebin_delay = self.inter_window(self.specBigBottleB[gas], self.rebin_delay, windowSize=windowSize, direction=direction, useWindow=useWindow)
         for gas in list(self.spectraBottleD):
             if 'rebin' not in gas:
                 self.spectraBottleD[gas], self.spectraBottleD['window_'+gas], self.delayD = self.inter_window(self.spectraBottleD[gas], self.delayD, windowSize=windowSize, direction=direction, useWindow=useWindow)
@@ -321,6 +323,7 @@ class FFT_ionS():
         if phaseCompensate:
             window2 = np.append(np.zeros(windowSize),window2,axis=0)
             window = np.append(np.zeros(windowSize),window,axis=0)
+
         return window, window2, delay
 
     def apply_hannwindow(self,y):
@@ -583,7 +586,8 @@ class FFT_ionS():
                 for n in range(np.shape(P_inter)[0]):
                     P_inter[n]=np.where(P_inter[n]>2*np.pi-2, P_inter[n]-2*np.pi, P_inter[n])
 
-                P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
+                #P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
+                P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+0)])
 
             
             #aa = len(f_window[(f_window<100)])
@@ -615,13 +619,13 @@ class FFT_ionS():
                         if om==3655.52723:
                             axF.text(x=om-70, y=1.8, s='H2O a1 Sym',fontsize='8')
                 if gas == 'Ch0':
-                    omega = [526.49165,810.67748,1343.15199,2115,3655.52723]
+                    omega = [526.49165,810.67748,1343.15199,2115,2677.32968,3655.52723]
                 elif gas == 'Ch2':
-                    omega = [3655.52723]
+                    omega = [526.49165,810.67748,1343.15199,2115,2677.32968,3655.52723]
                 elif gas == 'Ch4':
                     omega = [3655.52723]
                 elif gas == 'Ch6':
-                    omega = [526.49165,810.67748,1343.15199,1594.43209,2115,3655.52723]
+                    omega = [526.49165,810.67748,1343.15199,1594.43209,2115,2677.32968,3655.52723]
                 inter = 0
                 for w in omega:
                     inter = inter + np.where(np.abs(f_window-w)<10,P_window,0)
@@ -704,7 +708,9 @@ class FFT_ionS():
             i=i+1
             if ifsave:
                 self.wks.from_list(0, f_window, lname="Frequency", axis='X')
-                self.wks.from_list(i, np.abs(Y_window), lname=label, axis='Y')
+                self.wks.from_list(i*3-2, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), lname=label, axis='Y')
+                self.wks.from_list(i*3-1, P_window[0], lname=label, axis='Y')
+                self.wks.from_list(i*3, P_window[1], lname=label, axis='E')
 
         fig.tight_layout()
         save_obj(self.result, pl.PureWindowsPath(self.savePath, self.folder+'_result'+r'.pkl'))
@@ -1217,13 +1223,14 @@ class FFT_ionS():
 
     def wlt(self, gas):
         PHztocm = 33356.40952
-        filt_freqs_in_cm = np.array([3643.52883])
+        filt_freqs_in_cm = np.array([812,1344,2155,3657])
         bw = 30
         wavelet = 'cmor3-1'
-        signal = self.specBigBottleB['rebin_'+'window_'+gas] - np.mean(self.specBigBottleB['rebin_'+'window_'+gas])
+        signal = self.specBigBottleB['window_'+'rebin_'+gas] - np.mean(self.specBigBottleB['window_'+'rebin_'+gas])
         signal = signal/np.max(signal)
         delay = self.rebin_delay*1e15
-        scales = np.logspace(1, 2.7, num=400)
+        delay = delay[np.where(delay>200)]
+        scales = np.logspace(1.5, 2.9, num=400)
 
         frequencies = pywt.scale2frequency(
             wavelet, scales) / (delay[1] - delay[0])
@@ -1234,6 +1241,7 @@ class FFT_ionS():
             signal, scales, wavelet, delay[1] - delay[0])
         amplitude = np.abs(coefficients)
         amplitude = amplitude/np.max(amplitude)
+        amplitude = amplitude[:,-np.size(delay):]
 
         fig, ax = plt.subplots(
             2+filt_freqs_in_cm.size,
@@ -1246,9 +1254,9 @@ class FFT_ionS():
             #10*np.log10(amplitude),
             amplitude,
             cmap='jet',
-            vmax = 0.5)
+            vmax = 0.02)
         ax[0].set_xlim([delay.min(), delay.max()])
-        ax[0].set_ylim([0, 7000])
+        ax[0].set_ylim([0, 5000])
         ax[0].set_ylabel('frequency [cm-1]')
         ax[0].xaxis.set_ticklabels([])
         divider = make_axes_locatable(ax[0])
@@ -1276,14 +1284,16 @@ class FFT_ionS():
             occ = occ/norm
             ax[1+idx].plot(
                 delay,
-                10*np.log10(occ),
-                label='ampl. [dB], freq = ' + str(filt_freq_in_cm))
+                #10*np.log10(occ),
+                occ[-np.size(delay):],
+                #label='ampl. [dB], freq = ' + str(filt_freq_in_cm))
+                label='freq = ' + str(filt_freq_in_cm))
             ax[1+idx].set_xlim([delay.min(), delay.max()])
-            ax[1+idx].set_ylim([-30, 1])
+            #ax[1+idx].set_ylim([-30, 1])
             ax[1+idx].xaxis.set_ticklabels([])
             ax[1+idx].legend(frameon=0, loc='upper right')
 
-        ax[-1].plot(delay, signal)
+        ax[-1].plot(delay, signal[-np.size(delay):])
         ax[-1].set_xlim([delay.min(), delay.max()])
         ax[-1].set_ylim([
             np.mean(signal)-2*np.std(signal),
@@ -1318,20 +1328,20 @@ class FFT_ionS():
             t=t+self.windowSize*self.stepSize
             self.stftSBFre = f
             self.stftSBDelay = t
-            #vmax=abs(self.stftSB[gas][0:int(len(f)/10)]).max()*ratio
-            #vmin=abs(self.stftSB[gas]).min()*ratio
-            vmax=2*np.pi+0.5
-            vmin=-0.5
-            #norm = cm.colors.Normalize(vmax=vmax, vmin=vmin)
+            vmax=abs(self.stftSB[gas][0:int(len(f)/10)]).max()*ratio
+            vmin=abs(self.stftSB[gas]).min()*ratio
+            #vmax=2*np.pi+0.5
+            #vmin=-0.5
+            norm = cm.colors.Normalize(vmax=vmax, vmin=vmin)
             levels = np.arange(vmin,vmax,(vmax-vmin)/10)
-            #im=ax.contourf(t*10**15, f/10**12*33.35641,
-            #               np.abs(self.stftSB[gas]), levels=levels, cmap='jet', norm=norm)
             im=ax.contourf(t*10**15, f/10**12*33.35641,
-                           np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']), levels=levels, cmap='jet')
+                           np.abs(self.stftSB[gas]), levels=levels, cmap='jet', norm=norm)
+            #im=ax.contourf(t*10**15, f/10**12*33.35641,
+            #               np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']), levels=levels, cmap='jet')
             ax_histx.plot(t*10**15, np.sum(np.abs(self.stftSB[gas]),axis=0))
             ax_histx.set_xticklabels([])
-            #ax_histy.plot(np.mean(np.abs(self.stftSB[gas]),axis=1),f/10**12*33.35641)
-            ax_histy.plot(np.mean(np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']),axis=1),f/10**12*33.35641)
+            ax_histy.plot(np.mean(np.abs(self.stftSB[gas]),axis=1),f/10**12*33.35641)
+            #ax_histy.plot(np.mean(np.angle(self.stftSB[gas])-np.angle(self.stftSB['rebin_Ch8']),axis=1),f/10**12*33.35641)
             #plt.xlim([100, self.delayB[-1]])
             ax_histy.set_ylim([200, 4500])
             ax.set_ylabel('Frequency [cm-1]')
@@ -1485,14 +1495,15 @@ if __name__ == '__main__':
         d.findZeroDelay3()
         #d.show_Spectra()
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
-        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
+        #d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
         
-        d.show_FFT()
+        #d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)
-        #d.rebinS(5)
-        #d.window(windowSize=200,useWindow=False)
-        #d.STFTS(gas='rebin_Ch8',windowsize=400)
+        d.rebinS(2)
+        d.window(windowSize=0,useWindow=False)
+        #d.STFTS(gas='rebin_Ch8',windowsize=200)
+        d.wlt('Ch8')
         #d.STFTS(gas='rebin_Ch0',windowsize=400)
         #d.STFTS2(windowsize=182.5*2)
