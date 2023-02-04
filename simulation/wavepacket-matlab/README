@@ -1,0 +1,160 @@
+WavePacket is a program package for the numerical simulation of 
+quantum-mechanical wavepacket dynamics for distinguishable particles. 
+WavePacket comprises functions for stationary and time-evolving, 
+closed and open quantum systems, as well as for their optimal control 
+by external fields. This README describes the stable MATLAB version 7.0.0 
+of WavePacket released on June 01, 2022, which is the first version also
+running reasonably under Octave. Note that since the release of version 
+6.0.0 in late 2018, WavePacket is also offering fully classical and mixed 
+quantum-classical propagation.
+
+1. Installation and execution of the programs
+=============================================
+
+To use the program, add the Sources directory to your Matlab source path. 
+For each simulation, you then write an initialization function qm_init, 
+change the working directory to the directory where this function is located, 
+and run the follwing commands (either from console or from a Matlab script)
+
+	qm_setup('<state>', parameters);
+	qm_init;
+	qm_propa('<method>', parameters);
+	qm_cleanup();
+
+Depending on the choice of text string <state> in the first line, we  deal 
+either with a wavefunction (represented on a grid; 'wave') or a phase-space 
+density (sampled by classical trajectories, 'traj'). Accordingly, the 
+propagation called in the third line numerically solves a time-dependent 
+Schroedinger equation (TDSE) or a classical Liouville equation (CLE). 
+The latter can be replaced by a mixed quantum-classical Liouville equation 
+(QCLE) which is approximately solved by surface hopping trajectories (SHT) 
+methods in which case the text string has to be set to 'mssh' or 'fssh' or 
+'sssh' for multiple, fewest, or single switch hopping, respectively. In each 
+case, the numerical propagation method is specified by text string <method> 
+in the third line. Replacing qm_propa by qm_bound in the third line above, 
+you can also run a bound state calculation that numerically solves the 
+time-independent Schroedinger equation (TISE), for objects of class "wave" 
+only. There is also the option to run qm_movie instead, which produces 
+animated graphics visualizing the results from previous runs of qm_propa 
+and/or qm_bound. Alternatively, one can run qm_matrix and qm_abncd to switch 
+from coordinate to energy representation of quantum mechanics where the 
+(optimal) control of quantum dynamics can be simulated by calling qm_propa 
+or qm_optimal. These two functions work for closed as well as for open quantum
+systems; in the latter case they solve the Liouville-von Neumann equation 
+(LvNE) with Lindblad operators for dissipation and/or dephasing. If necessary,
+dimension reduction can be carried out by qm_balance and qm_truncate or 
+qm_H2model. For a complete list of functions, see also below.
+
+The easiest way to learn how to set up an initialization function qm_init.m is 
+by studying the numerous examples found in the Demos directory. As indicated 
+there by the names of the subdirectories, some of those example are for 
+prototyical model Hamiltonians (such as Morse oscillator, spin-boson system) 
+while others are from the field of molecular physics (vibration, rotation, 
+electronic excitation), partly also including application of quantum optimal 
+control theory. A thorough description of all of these examples, along with 
+data and graphical output, can be found on the general Wavepacket wiki pages 
+hosted at SourceForge,
+	http://sourceforge.net/p/wavepacket/wiki/Home/
+where also a lot of numerical details are documented. Furthermore, a detailed
+user guide and a reference of all variables, functions, and parameters can be 
+found on the Wiki pages of the Matlab version,
+	http://sourceforge.net/p/wavepacket/matlab/wiki/Home/
+Note that the further development of the WavePacket software will be centrally 
+administrated through the SourceForge website, providing a GIT repository as 
+well as a ticket system for planning bug fixes or feature requests arising 
+from the community.
+
+2. Brief description of the files
+=================================
+	
+The Sources directory contains the following files and subdirectories
+
+A. WavePacket functions
+------------------------
+
+qm_setup.m    - Before running WavePacket: set up simulation
+qm_bound.m    - Perform bound state calculations: solve TISE
+qm_propa.m    - Perform wavepacket of trajectory propagations: 
+                solve TDSE or CLE or QCLE
+qm_movie.m    - Visualize results from previous WavePacket calculations 
+                (qm_bound or qm_propa)
+qm_matrix.m   - Transform results of qm_bound (TISE) to energy representation
+qm_abncd.m    - Set up system matrices for TDSE or LvNE in energy representation 
+qm_optimal.m  - Optimal control of TDSE or LvNE systems in energy representation
+qm_balance.m  - Transformation to balance controllability and observability
+qm_truncate.m - Truncate states that are of low controllability and observability
+qm_H2model.m  - Perform H2 optimal model reduction
+qm_cleanup.m  - After WavePacket simulations: close files and clean up
+
+B. Main class folders
+-----------------------
+
+@generic - superclass to be inherited from by all of the classes listed below 
+
+@wave - representing quantum states by wavefunctions given on a grid
+@ket  - representing quantum states by ket vectors 
+        based on an energy representation
+@rho  - representing quantum density operators by density matrices 
+        based on an energy representation
+@traj - representing phase-space densities by (quantum-)classical trajectories
+
+Further main class folders for "surface hopping trajectories" 
+can be found inside the +sht folder
+
++sht/@generic  - generic class for all surface hopping methods
++sht/@mssh     - multiple switches surface hopping
++sht/@fssh     - fewest switches surface hopping
++sht/@sssh     - single switch surface hopping
+
+	
+C. Other package folders
+------------------------
+
++amo           - various model functions for additional multiplicative operators
++aux           - auxiliary functions; perhaps of some limited usefulness 
+                 warning: not yet fully matured
++dip           - various model functions for permanent dipole moments 
+                 (1st order interaction with E-fields)
++dof           - class definitons for | discrete variable | finite basis | 
+                 representations for each degree of freedom
++dof/@fft      - class folder for FFT-based (plane wave) methods
++dof/@hermite  - class folder for Gauss-Hermite
++dof/@legendre - class folder for Gauss-Legendre
++efi           - external electric fields; typically expressed as a 
+                 sequence of pulses with envelope and carrier
++ham           - certain aspects of the Hamiltonians, 
+                 e.g. the coupling of the channels and the truncation
++init          - various models for initial wavefunctions or 
+                 for initial classical phase space densities
++kin           - class definitions for special kinetic energy operators, 
+                 e.g. for Jacobi coordinates or triatomics
++math          - mathematical utility functions: elliptic functions,
+                 Hermite/Laguerre polynomials, Lyapunov/Sylvester solvers, etc
++nip           - various model functions for negative imaginary potentials 
+                 used as absorbing boundary conditions
++obs           - expectation values and uncertainties of basic observables
++oct           - utilities for (optimal) control theory
++pol           - various model functions for polarizabilities 
+				 (2nd order interaction with E-fields)
++pot           - various model functions for (real) potential energy functions
++prt           - print output goes to console and to logfile in parallel
++sbc           - various model functions for system-bath coupling (LvNE only)
++sht           - several variants of surface hopping trajectory algorithms
++tmp           - discretization of time 
+                 (and time-dependence of external fields)
++tmp/+wave     - PDE solvers for time-dependent Schroedinger equations (wavefunctions)
++tmp/+traj     - ODE solvers for classical Liouville equations (trajectory bundles)
++tmp/+ode      - ODE solvers for | time-dependent | 
+                 quantum Liouville | Schroedinger | equations
++vis           - visualization (graphical output),
+                 e.g., surface and contour plots of Wigner representations 
+
+3. Contact
+==========
+
+If you have any feedback, questions, suggestions, do not hestitate to contact us. 
+The maintenance and further development is mainly done by PD Dr. Burkhard Schmidt 
+at Freie Universität Berlin, Germany
+	burkhard.schmidt@fu-berlin.de
+Alternatively, you can also write to Dr. Ulf Lorenz
+	ulf@wavepacket.org

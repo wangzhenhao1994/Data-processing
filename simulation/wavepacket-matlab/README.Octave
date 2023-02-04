@@ -1,0 +1,12 @@
+This version of Wavepacket can also be run with GNU Octave, 
+which is mostly compatible with Matlab, except for minor issues,
+mainly in the graphical output.
+
+Installation is usually straight-forward: Download and run the Windows
+installer or install the appropriate Linux package, and off you go. Note that
+you will need the extension packages "io" and "statistics", but these are
+bundled with the Windows installer or usually available as separate packages
+under Linux.
+
+For more detailed information also about limitations, see the blog post at
+https://sourceforge.net/p/wavepacket/matlab/blog/2022/05/first-octave-version-ready-for-release/

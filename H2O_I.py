@@ -116,7 +116,7 @@ class FFT_ionS():
         self.channelSize = 12032#24000#1536
         self.scanLengthD = 3320#1200
         self.peakRange = [-100, 100]  # range of the peak
-        self.delayD = np.arange(self.scanLengthD)/self.scanLengthD*100*2*2*3.33564*10**-15#/4161.16632*4155.0587
+        self.delayD = np.arange(self.scanLengthD)/self.scanLengthD*100*2*2*3.33564*10**-15
         self.gasBottle = {
             "O+": self.calculator.cal_pixel(16)+self.peakRange,
             "H2+": self.calculator.cal_pixel(2)+self.peakRange,

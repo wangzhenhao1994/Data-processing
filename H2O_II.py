@@ -30,7 +30,7 @@ import originpro as op
 from brokenaxes import brokenaxes
 
 ifsave = False
-ifsaveT = False
+ifsaveT = True
 ifsavePhase = False
 if ifsave or ifsaveT or ifsavePhase:
     op.set_show(show=True)
@@ -551,7 +551,7 @@ class FFT_ionS():
 
         lab=['Mass 18','Mass 1','Mass 2','Mass 16','Mass 17']
         i=0
-        if ifsave:
+        if ifsave or ifsaveT:
             self.wks = op.new_sheet('w',lname=str('FFT')+str('_')+self.folder)
 
         _preP = 'window'+'_'
@@ -633,7 +633,7 @@ class FFT_ionS():
                 inter = np.where(inter==0,np.inf,inter)
                 P_window = inter
             elif self.folder == r'7.2E+14_H2O':
-                omega=[526.49165,810.67748,1343.15199,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
+                omega=[526.49165,810.67748,1343.15199,1821,1594.43209,2153.82946,2677.32968,3212.79562,3655.52723]
                 for om in omega:
                     if i>0:
                         axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
@@ -647,7 +647,7 @@ class FFT_ionS():
                 if gas == 'Ch0':
                     omega = [526.49165,810.67748,1343.15199,2115,3212.79562,3655.52723]
                 elif gas == 'Ch2':
-                    omega = [3655.52723]
+                    omega = [3655.52723,4158,1821]
                 elif gas == 'Ch4':
                     omega = [3655.52723]
                 elif gas == 'Ch6':
@@ -672,7 +672,7 @@ class FFT_ionS():
                 if gas == 'Ch0':
                     omega = [526.49165,810.67748,1343.15199,2115,1594.43209,3655.52723]
                 elif gas == 'Ch2':
-                    omega = [3655.52723]
+                    omega = [3655.52723,4158]
                 elif gas == 'Ch4':
                     omega = [3655.52723]
                 elif gas == 'Ch6':
@@ -712,6 +712,9 @@ class FFT_ionS():
                 self.wks.from_list(i*3-2, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), lname=label, axis='Y')
                 self.wks.from_list(i*3-1, P_window[0], lname=label, axis='Y')
                 self.wks.from_list(i*3, P_window[1], lname=label, axis='E')
+            if ifsaveT:
+                self.wks.from_list(0, self.delayB_noPad, 'X')
+                self.wks.from_list(i, self.specBigBottleB[gas], lname=gas, axis='Y')
 
         fig.tight_layout()
         save_obj(self.result, pl.PureWindowsPath(self.savePath, self.folder+'_result'+r'.pkl'))
@@ -1504,18 +1507,18 @@ class FFT_ionS():
         #1V, 20mV, 10mV, 2V ,5V and 20mV #8.9E+14_H2O 5e-7 mbar
         if self.folder == r'4.5E+14_H2O':
             boxcarA=[1,0.01,0.01,1,5,0.01]
-            u = np.sum(self.specBigBottleB['Ch2'][-9000:])*0.01#*9/5 #9/5 is to compensate the pressure
+            u = np.sum(self.specBigBottleB['Ch4'][-9000:])*0.01#*9/5 #9/5 is to compensate the pressure
         elif self.folder == r'7.2E+14_H2O':
             boxcarA=[1,0.02,0.01,1,5,0.02]
-            u = np.sum(self.specBigBottleB['Ch2'][-9000:])*0.02
+            u = np.sum(self.specBigBottleB['Ch4'][-9000:])*0.01
         elif self.folder == r'8.9E+14_H2O':
             boxcarA=[1,0.02,0.01,2,5,0.02]
-            u = np.sum(self.specBigBottleB['Ch2'][-9000:])*0.02
+            u = np.sum(self.specBigBottleB['Ch4'][-9000:])*0.01
         print(u)
         i=0
         for gas in self.specBigBottleB.keys():
             self.ratio[gas] = np.sum(self.specBigBottleB[gas][-9000:])/u*boxcarA[i]
-            if gas == 'Ch4':
+            if gas == 'Ch2':
                 self.ratio[gas] = int(self.ratio[gas]*10)/10
             else:
                 self.ratio[gas] = int(self.ratio[gas])
@@ -1534,9 +1537,9 @@ if __name__ == '__main__':
         d.findZeroDelay3()
         #d.show_Spectra()
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
-        #d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
+        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
         
-        #d.show_FFT()
+        d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)
