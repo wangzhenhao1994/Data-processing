@@ -171,20 +171,27 @@ class FFT_ionS():
         '''
         windowSize in fs, rebinF = inputShape/outputShape, padddingF means the length of the padding divided by length of the data.
         '''
+        self.smoothedT={}
         self.smooth = smooth
         self.stepSize = self.stepSize*rebinF
         _size = self.specBigBottleB['Ch0'].size
         paddingSize = int(_size*paddingF)
         self.paddingSize = paddingSize
+        [1,0.01,0.01,1,5,0.01]
         for gas in self.phaseSpecBottleB.keys():
+            self.smoothedT[gas]=0
             for i in range(self.phaseSpecBottleB[gas].shape[0]):
                 interSpec = self.phaseSpecBottleB[gas][i][-self.specBigBottleB[gas].size:]
+                _,interSmoothedT,self.smoothedT['T'] = self.inter_window(interSpec,self.delayB,windowSize=50,direction=zeroDirection, useWindow=False, phaseCompensate=False,smooth = False)
+                self.smoothedT[gas]= self.smoothedT[gas] + interSmoothedT
                 if delayRange:
                     y=interSpec[np.where(np.logical_and(delayRange[0]<self.delayB,self.delayB<delayRange[1]))]
                     t=self.delayB[np.where(np.logical_and(delayRange[0]<self.delayB,self.delayB<delayRange[1]))]
                     _,y,t = self.inter_window(y,t,windowSize=0,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 else:
                     _,y,t = self.inter_window(interSpec,self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
+
+
                 #_,y,t = self.inter_window(self.phaseSpecBottleB[gas][i],self.delayB,windowSize=windowSize,direction=zeroDirection, useWindow=useWindow, phaseCompensate=phaseCompensate,smooth = smooth)
                 #plt.plot(t,y)
                 #plt.plot(self.delayB,self.specBigBottleB['Ch8']-np.mean(self.specBigBottleB['Ch8']))
@@ -208,6 +215,7 @@ class FFT_ionS():
                 _interY[i] = Y
             self.fftSB['window_'+gas+'_fft'] = _interY
             self.fftSB[gas] = 0
+
         self.fftSB['window_'+'fre'] = f
         print(self.folder)
         save_obj(self.fftSB,os.path.join(self.savePath,str(smooth)+str(self.folder)+r'fftSB.pkl'))
@@ -307,8 +315,8 @@ class FFT_ionS():
                  data[round((__len+windowSize)/2)])/2*(np.zeros(windowSize)+1),
                 data[-(__len-round((__len+windowSize)/2)+1):]
             ))
-        window=polynomial(window, order=1, plot=False)
-        window = window - window[-1]#shift the base line to zero
+        #window=polynomial(window, order=1, plot=False)
+        window = window - window[0]#shift the base line to zero
 
         #if not math.log2(np.size(window)).is_integer():
         #    print('Fill the data to length if power of 2!')
@@ -558,6 +566,9 @@ class FFT_ionS():
         self.result = {}
         self.result['phase'] = {}
         self.result['amplitude'] = {}
+
+        boxcarA={}
+        boxcarA['Ch0'],boxcarA['Ch2'],boxcarA['Ch4'],boxcarA['Ch6'],boxcarA['Ch8'] = [1,0.01,0.01,1,5]
         for gas in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
             if 'filter' in gas  or 'window' in gas or 'rebin' in gas or 'com' in gas:
                 continue
@@ -594,7 +605,7 @@ class FFT_ionS():
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
             aa = len(f_window[(f_window<100)])
-            bb=len(f_window[(f_window<4300)])
+            bb=len(f_window[(f_window<15000)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
@@ -665,10 +676,10 @@ class FFT_ionS():
                     else:
                         axF.axvline(x=om,clip_on=False,c='k',linestyle='--',alpha=0.3)
                         axF.text(x=om-70, y=1.1, s=str(int(om)),fontsize='8')
-                        if om==1594.43209:
-                            axF.text(x=om-70, y=1.8, s='H2O+ Bend',fontsize='8')
-                        if om==3655.52723:
-                            axF.text(x=om-70, y=1.8, s='H2O a1 Sym',fontsize='8')
+                        #if om==1594.43209:
+                        #    axF.text(x=om-70, y=1.8, s='H2O+ Bend',fontsize='8')
+                        #if om==3655.52723:
+                        #    axF.text(x=om-70, y=1.8, s='H2O a1 Sym',fontsize='8')
                 if gas == 'Ch0':
                     omega = [526.49165,810.67748,1343.15199,2115,1594.43209,3655.52723]
                 elif gas == 'Ch2':
@@ -692,11 +703,12 @@ class FFT_ionS():
             if gas == 'Ch8':
                 pass
             else:
-                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r',linewidth=2,label='Phase')
+                pass
+                #axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r',linewidth=2,label='Phase')
                 #axP.axhline(y=0.5, color='b', linestyle='--', label='Phase_aid')
                 #axP.axhline(y=1.5, color='b', linestyle='--')
             #plot(f_window,P_window,'r')
-            axF.set_ylim([0,0.2])
+            #axF.set_ylim([0,0.2])
             #axF.set_xlim([200,4500])
             axP.set_yticks([-1,-0.5,0,0.5,1])
             axP.grid(visible=True,linestyle='--',linewidth='0.3',c='b')
@@ -707,14 +719,16 @@ class FFT_ionS():
             axF.legend(loc=(0.02,0.8),ncol=2,fontsize=10)
     
             i=i+1
-            if ifsave:
+            if 1:
                 self.wks.from_list(0, f_window, lname="Frequency", axis='X')
                 self.wks.from_list(i*3-2, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), lname=label, axis='Y')
-                self.wks.from_list(i*3-1, P_window[0], lname=label, axis='Y')
-                self.wks.from_list(i*3, P_window[1], lname=label, axis='E')
-            if ifsaveT:
-                self.wks.from_list(0, self.delayB_noPad, 'X')
-                self.wks.from_list(i, self.specBigBottleB[gas], lname=gas, axis='Y')
+                #self.wks.from_list(i*3-1, P_window[0], lname=label, axis='Y')
+                #self.wks.from_list(i*3, P_window[1], lname=label, axis='E')
+            if 0:
+                #self.wks.from_list(0, self.rebin_factor(self.delayB,10), 'X')
+                #self.wks.from_list(i, self.rebin_factor((self.specBigBottleB[gas]-np.mean(self.specBigBottleB[gas])),10), lname=gas, axis='Y')
+                self.wks.from_list(0, self.smoothedT['T']*1e15, 'X')
+                self.wks.from_list(i, self.smoothedT[gas], lname=gas, axis='Y')
 
         fig.tight_layout()
         save_obj(self.result, pl.PureWindowsPath(self.savePath, self.folder+'_result'+r'.pkl'))

@@ -23,7 +23,7 @@ import os
 from math import ceil, pi, sqrt, log 
 import pickle
 from brokenaxes import brokenaxes
-from adjustText import adjust_text
+#from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
@@ -687,8 +687,8 @@ if __name__ == '__main__':
     ####################################################################################################################
     f00 = FFT_ionS(filename=f00, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(260,8,5),ChN=11)#260-250
 
-    ff=[f0,f1,f2]#
-    ff=[38,48,53]
+    #ff=[f0,f1,f2]#
+    ff=[38,48,53]#measured in June, best data
     for x in ff:
         x.pathFinder()
         print(x.filepath)
