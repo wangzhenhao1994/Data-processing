@@ -76,7 +76,6 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'D:\dataProcessing')
         self.scanTime = scanTime
         self.trueScanTime = ceil(self.scanTime/1.6)*1.6
         self.scanLengthB = 3360
@@ -108,14 +107,15 @@ class FFT_ionS():
         except TypeError:
             self.intensity = str('%.1E' % Decimal(intensity))
         self.stage = 'piezo'
-        self.savePath = os.path.join(self.rootPath,r'CO2', str(self.intensity)+'_'+self.molecule)
+
+        self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
+        self.savePath = os.path.join(self.rootPath, r'processedData', r'inter', self.molecule, str(self.intensity)+'_'+self.molecule)
 
 
-        
     def pathFinder(self):
         for fn in self.filename:
             interpath = pl.PureWindowsPath(fn[9:16], fn[9:19])
-            self.filepath = self.filepath + [pl.PureWindowsPath(self.rootPath, interpath, fn + r'.hdf5')]
+            self.filepath = self.filepath + [pl.PureWindowsPath(self.rootPath, r'OriginalData', interpath, fn + r'.hdf5')]
             #self.exportPath = pl.PureWindowsPath(self.rootPath, r'plot20220602')
             #self.exportPath = pl.PureWindowsPath(self.rootPath, interpath, r'processed')
         #if not os.path.exists(self.exportPath):
@@ -379,7 +379,7 @@ class FFT_ionS():
 
 if __name__ == '__main__':
 
-    directory = os.path.abspath(r'E:\backup07072022\Data_newTOF')
+    directory = os.path.abspath(r'D:\SF_FFT\OriginalData')
     ff=[]
     for root, dirs, files in os.walk(directory):
         #print(root)

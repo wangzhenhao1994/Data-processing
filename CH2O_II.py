@@ -73,10 +73,7 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing\CH2O')
-        #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
-        #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\CH2O',folder))
+
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -105,7 +102,7 @@ class FFT_ionS():
         self.scanNo = None
         self.stage = 'piezo'
         self.intensity = 8.9E14
-        self.molecule = str('H20')
+        self.molecule = str('CH2O')
 
         #setting for data from digitizer
         self.channelSize = 12032#24000#1536
@@ -116,6 +113,9 @@ class FFT_ionS():
         self.fftSD = {}
         self.stftSD = {}
         self.dataD = 0
+
+        self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
+        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\SF_FFT\processedData\inter',self.molecule,folder))
 
     def read(self):
         totalCounter = {}

@@ -78,7 +78,6 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
         self.scanTime = scanTime
         self.trueScanTime = ceil(self.scanTime/1.6)*1.6
         self.scanLengthB = int(self.trueScanTime*sampRate)
@@ -109,7 +108,6 @@ class FFT_ionS():
         except TypeError:
             self.intensity = str('%.1E' % Decimal(intensity))
         self.stage = 'piezo'
-        self.savePath = os.path.join(self.rootPath, r'processedData', r'inter', r'H2O', str(self.intensity)+'_'+self.molecule)
 
         #setting for data from digitizer
         #self.calculator = Calibration_mass(cal_mass, cal_pixel)
@@ -131,7 +129,9 @@ class FFT_ionS():
         #self.stftSD = {}
         #self.dataD = 0
 
-        
+        self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
+        self.savePath = os.path.join(self.rootPath, r'processedData', r'inter', self.molecule, str(self.intensity)+'_'+self.molecule)
+
     def pathFinder(self):
         for fn in self.filename:
             interpath = pl.PureWindowsPath(fn[9:16], fn[9:19])
