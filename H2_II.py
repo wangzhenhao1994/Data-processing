@@ -76,8 +76,6 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing\H2')
-        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\H2',folder))
         self.delayB = np.linspace(start=0,stop=1300, num=13000)*10**-15
         self.delayStep = 0.1*10**-15
         self.delayB_noPad = np.linspace(start=0,stop=1300, num=13000)*10**-15
@@ -115,6 +113,8 @@ class FFT_ionS():
         self.stftSD = {}
         self.dataD = 0
 
+        self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
+        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\SF_FFT\processedData\inter',self.molecule,folder))
     def read(self):
         totalCounter = {}
         #for gas in ['Ch0','Ch2','Ch4','Ch6','Ch8','Ch10']:
