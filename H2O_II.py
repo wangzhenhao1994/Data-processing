@@ -1,3 +1,8 @@
+#calibrate the delay drift for different measurement, cut the data if necessray
+#do FFT and show FFT and phase
+#Main function if self.show_FFT()
+#smooth function doesn't influence the phase, checked
+
 from fileinput import filename
 from weakref import ref
 import matplotlib as mpl
@@ -27,13 +32,7 @@ from calculate_k_b import Calibration_mass
 from BaselineRemoval import BaselineRemoval
 from lmfit import minimize, Parameters, Parameter, report_fit
 import originpro as op
-from brokenaxes import brokenaxes
 
-ifsave = False
-ifsaveT = True
-ifsavePhase = False
-if ifsave or ifsaveT or ifsavePhase:
-    op.set_show(show=True)
 import math
 
 my_path = os.path.abspath(__file__)
@@ -75,10 +74,6 @@ class FFT_ionS():
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'D:\DataProcessing\H2O\202206')
-        #self.savePath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\4.5E+14_H2O')
-        #self.savePath= pl.PureWindowsPath(os.path.join(r'C:\Users\user\Desktop\Data_newTOF\dataProcessing\09122022\H2O',folder))
-        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\DataProcessing\H2O\202206',folder))
         self.delayB,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)
         self.delayB = self.delayB*10**-15
         self.stepSize = self.stepSize*10**-15
@@ -107,17 +102,20 @@ class FFT_ionS():
         self.scanNo = None
         self.stage = 'piezo'
         self.intensity = 8.9E14
-        self.molecule = str('H20')
+        self.molecule = str('H2O')
 
         #setting for data from digitizer
-        self.channelSize = 12032#24000#1536
-        self.scanLengthD = 3320#1200
-        self.peakRange = [-100, 100]  # range of the peak
-        self.delayD = np.arange(self.scanLengthD)/self.scanLengthD*100*2*2*3.33564*10**-15#*3602/3647
-        self.spectraBottleD = {}
-        self.fftSD = {}
-        self.stftSD = {}
-        self.dataD = 0
+        #self.channelSize = 12032#24000#1536
+        #self.scanLengthD = 3320#1200
+        #self.peakRange = [-100, 100]  # range of the peak
+        #self.delayD = np.arange(self.scanLengthD)/self.scanLengthD*100*2*2*3.33564*10**-15#*3602/3647
+        #self.spectraBottleD = {}
+        #self.fftSD = {}
+        #self.stftSD = {}
+        #self.dataD = 0
+
+        self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
+        self.savePath= pl.PureWindowsPath(os.path.join(r'D:\SF_FFT\processedData\inter',self.molecule,folder))
 
     def read(self):
         totalCounter = {}
@@ -126,8 +124,8 @@ class FFT_ionS():
         for gas in ['Ch0','Ch2','Ch4','Ch6','Ch8','Ch10']:
             self.specBigBottleB[gas] = np.zeros((1000,13000))
             totalCounter[gas] = 0
-        if not os.path.exists(os.path.join(self.savePath,r'plotData')):
-            os.mkdir(os.path.join(self.savePath,r'plotData'))
+        #if not os.path.exists(os.path.join(self.savePath,r'plotData')):
+        #    os.mkdir(os.path.join(self.savePath,r'plotData'))
         for file in os.listdir(self.savePath):
             filename = os.fsdecode(file)
             if filename.endswith(".pkl"):
@@ -543,7 +541,7 @@ class FFT_ionS():
         return b
 
 
-    def show_FFT(self):
+    def show_FFT(self, ifsaveFFT=False, ifsaveT=False):
         self.interfftSB = load_obj(os.path.abspath(os.path.join(d.savePath, 'False'+str(self.folder)+r'fftSB.pkl')))
         self.dcRange=0
         fig, ax = plt.subplots(nrows=5, ncols=1, sharex=True, sharey=True,figsize=(10,10))
@@ -559,8 +557,12 @@ class FFT_ionS():
 
         lab=['Mass 18','Mass 1','Mass 2','Mass 16','Mass 17']
         i=0
-        if ifsave or ifsaveT:
-            self.wks = op.new_sheet('w',lname=str('FFT')+str('_')+self.folder)
+        if ifsaveFFT:
+            op.set_show(show=True)
+            self.wksFFT = op.new_sheet('w',lname=str('FFT')+str('_')+self.folder)
+        if ifsaveT:
+            op.set_show(show=True)
+            self.wksT = op.new_sheet('w',lname=str('Time')+str('_')+self.folder)
 
         _preP = 'window'+'_'
         self.result = {}
@@ -719,16 +721,16 @@ class FFT_ionS():
             axF.legend(loc=(0.02,0.8),ncol=2,fontsize=10)
     
             i=i+1
-            if 1:
-                self.wks.from_list(0, f_window, lname="Frequency", axis='X')
-                self.wks.from_list(i*3-2, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), lname=label, axis='Y')
+            if ifsaveFFT:
+                self.wksFFT.from_list(0, f_window, lname="Frequency", axis='X')
+                self.wksFFT.from_list(i*3-2, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), lname=label, axis='Y')
                 #self.wks.from_list(i*3-1, P_window[0], lname=label, axis='Y')
                 #self.wks.from_list(i*3, P_window[1], lname=label, axis='E')
-            if 0:
+            if ifsaveT:
                 #self.wks.from_list(0, self.rebin_factor(self.delayB,10), 'X')
                 #self.wks.from_list(i, self.rebin_factor((self.specBigBottleB[gas]-np.mean(self.specBigBottleB[gas])),10), lname=gas, axis='Y')
-                self.wks.from_list(0, self.smoothedT['T']*1e15, 'X')
-                self.wks.from_list(i, self.smoothedT[gas], lname=gas, axis='Y')
+                self.wksT.from_list(0, self.smoothedT['T']*1e15, 'X')
+                self.wksT.from_list(i, self.smoothedT[gas], lname=gas, axis='Y')
 
         fig.tight_layout()
         save_obj(self.result, pl.PureWindowsPath(self.savePath, self.folder+'_result'+r'.pkl'))
@@ -807,7 +809,7 @@ class FFT_ionS():
         plt.savefig(os.path.join(os.path.join(self.savePath,self.folder+r'timeSlice.png')),dpi=720,bbox_inches='tight',pad_inches=0,transparent=True)
         #plt.show()
 
-    def show_Spectra(self, shift=0):
+    def show_Spectra(self, ifsaveT=False):
         gs = gridspec.GridSpec(2, 3)
         #gs = gridspec.GridSpec(1, 1)
         fig = plt.figure(figsize=(20,8))
@@ -815,6 +817,7 @@ class FFT_ionS():
         lab=['Mass1','Mass2','Mass16','Mass17','Mass18','Ch2+Ch4','Mass1+Mass16', 'Mass1+Mass17', 'Mass16+Mass17','Mass17+Mass18']
         i=0
         if ifsaveT:
+            op.set_show(show=True)
             self.wks = op.new_sheet('w',lname=str('Time')+str('_')+self.molecule+str('_')+self.folder)
         for gas in self.specBigBottleB.keys():
             print(gas)
@@ -833,7 +836,7 @@ class FFT_ionS():
             rebindelay = self.rebin_delay
             #else:
             #    delay = self.rebin_delay
-            ax.plot(delay*10**15+shift,
+            ax.plot(delay*10**15,
                      self.specBigBottleB[gas]/(np.amax(self.specBigBottleB[gas][5500:6000])-np.amin(self.specBigBottleB[gas][5500:6000])), label=gas)#/np.amax(self.specBigBottleB[gas])
             #ax.plot(delay*10**15+shift,
             #         self.specBigBottleB['window_filter_'+gas], label=label)
@@ -847,7 +850,7 @@ class FFT_ionS():
             ax.legend()
             if ifsaveT:
                 self.wks.from_list(0, delay*10**15, 'X')
-                self.wks.from_list(i, self.specBigBottleB['filter_'+gas], lname=gas, axis='Y')
+                self.wks.from_list(i, self.specBigBottleB['filter_'+gas], lname=label, axis='Y')
         #plt.legend()
         fig.tight_layout()
         plt.show()
@@ -1195,50 +1198,6 @@ class FFT_ionS():
                     #plt.show()
         save_obj(self.phaseBottle, os.path.join(self.savePath, r'relativePhase', r'phaseBottle.pkl'))
 
-    def superlet(self,gas):
-        for gas in gas:
-            #fs = 1/(self.delayB[1]-self.delayB[0])
-            fs = 1/(self.rebin_delay[1]-self.rebin_delay[0])  # sampling frequency
-            signal = self.specBigBottleB['rebin_'+'window_'+gas]
-            # frequencies of interest in Hz
-            foi = np.linspace(int(300/33.35641)*1e12, int(4500/33.35641)*1e12, 300)
-            scales = scale_from_period(1 / foi)
-            spec = superlet(
-                signal,
-                samplerate=fs,
-                scales=scales,
-                order_max=100,
-                order_min=1,
-                c_1=0.3,
-                adaptive=True,
-            )
-            # amplitude scalogram
-            ampls = np.abs(spec)
-
-            fig, (ax1, ax2) = plt.subplots(2, 1,
-                                           sharex=True,
-                                           gridspec_kw={"height_ratios": [1, 3]},
-                                           figsize=(6, 6))
-
-            ax1.plot(np.arange(signal.size) / fs, signal, c='cornflowerblue')
-            ax1.set_ylabel('signal (a.u.)')
-
-            extent = [0, len(signal) / fs, foi[0], foi[-1]]
-            im = ax2.imshow(ampls, cmap="jet", aspect="auto", extent=extent, origin='lower')
-
-            plt.colorbar(im,ax = ax2, orientation='horizontal',
-                         shrink=0.7, pad=0.2, label='amplitude (a.u.)')
-
-            ax2.plot([0, len(signal) / fs], [20, 20], "--", c='0.5')
-            ax2.plot([0, len(signal) / fs], [40, 40], "--", c='0.5')
-            ax2.plot([0, len(signal) / fs], [60, 60], "--", c='0.5')
-
-            ax2.set_xlabel("time (s)")    
-            ax2.set_ylabel("frequency (Hz)")
-
-            fig.tight_layout()
-            plt.show()
-
     def wlt(self, gas):
         PHztocm = 33356.40952
         filt_freqs_in_cm = np.array([812,1344,2155,3657])
@@ -1549,11 +1508,11 @@ if __name__ == '__main__':
         d.cal_ratio()
         print(d.ratio)
         d.findZeroDelay3()
-        #d.show_Spectra()
+        #d.show_Spectra(ifsaveT=False)
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
         d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
         
-        d.show_FFT()
+        d.show_FFT(ifsaveFFT=True,ifsaveT=True)
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
         #savemat("matlab_matrix.mat", mdic)

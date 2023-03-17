@@ -1,3 +1,9 @@
+########################################################################
+#This script is used to read in original data, then calibrate the delay drift for the first time, 'H2O_II.py' will calibrate again.
+#ignore the functions not called.
+#The processed files are saved in the folder 'processedData\inter\H2O', which will then used by script 'H2O_II.py'
+#
+#########################################################################
 from fileinput import filename
 from operator import xor
 from pickle import FALSE
@@ -22,19 +28,11 @@ import pathlib as pl
 import os
 from math import ceil, pi, sqrt, log 
 import pickle
-from brokenaxes import brokenaxes
-#from adjustText import adjust_text
 from decimal import Decimal
 from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
 
 import originpro as op
-ifsave = False
-ifsaveT = False
-ifsavePhase = False
-if ifsave or ifsaveT or ifsavePhase:
-    op.set_show(show=True)
-
 
 my_path = os.path.abspath(__file__)
 
@@ -67,20 +65,23 @@ def load_obj(filename):
         return pickle.load(f)
 
 class FFT_ionS():
-    #def __init__(self, filename, massRange=[5, 90], dcRange=2, cal_mass=[45,61], cal_pixel=[415,1141]):
+    #def __init__(self, filename, massRange=[5, 90], cal_mass=[45,61], cal_pixel=[415,1141]):
     def __init__(self, filename, scanTime, sampRate, massRange=[5, 50], molecule='H2O', intensity = 0, dcRange=5, ChN=11, cal_mass=[2,16], cal_pixel=[3082,10216]):
-    #def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[17,18], cal_pixel=[494,583]):
-    #def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[17,18], cal_pixel=[197,279]):
+    #def __init__(self, filename, massRange=[5, 50], cal_mass=[17,18], cal_pixel=[494,583]):
+    #def __init__(self, filename, massRange=[5, 50], cal_mass=[17,18], cal_pixel=[197,279]):
         '''
-
+        scanTime: the scanTime set in the measurement program. It is not true scan time because the scan time can only be integral times of 1.6 second.
+        sampRate: sample rate of the NIDaq.
+        intensity: int or [a,b] when pump and probe intensity are different
+        massRange=[5, 50], cal_mass=[2,16], cal_pixel=[3082,10216]: only used when reading data of digitizer.
         '''
         self.filename = filename
         self.saveRef = str(filename)
         self.filepath = []
-        self.rootPath= pl.PureWindowsPath(r'C:\Users\user\Desktop\Data_newTOF')
+        self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
         self.scanTime = scanTime
         self.trueScanTime = ceil(self.scanTime/1.6)*1.6
-        self.scanLengthB = 3360
+        self.scanLengthB = int(self.trueScanTime*sampRate)
         #self.delayB = np.arange(self.scanLengthB)/self.scanLengthB*100*2*2*3.33564*10**-15/4161.16632*4155.0587
         self.rebin_delay = None
         self.ifrebin = False
@@ -108,38 +109,33 @@ class FFT_ionS():
         except TypeError:
             self.intensity = str('%.1E' % Decimal(intensity))
         self.stage = 'piezo'
-        #self.savePath = os.path.join(self.rootPath, r'dataProcessing', r'H2O', str(self.intensity)+'_'+self.molecule)
-        self.savePath = os.path.join(self.rootPath, r'dataProcessing', r'09122022', r'H2O', str(self.intensity)+'_'+self.molecule)
+        self.savePath = os.path.join(self.rootPath, r'processedData', r'inter', r'H2O', str(self.intensity)+'_'+self.molecule)
 
         #setting for data from digitizer
-        self.calculator = Calibration_mass(cal_mass, cal_pixel)
-        self.channelSize = 12032#24000#1536
-        self.scanLengthD = 3320#1200
-        self.peakRange = [-100, 100]  # range of the peak
-        self.delayD = np.arange(self.scanLengthD)/self.scanLengthD*100*2*2*3.33564*10**-15
-        self.gasBottle = {
-            "O+": self.calculator.cal_pixel(16)+self.peakRange,
-            "H2+": self.calculator.cal_pixel(2)+self.peakRange,
-            "H+": self.calculator.cal_pixel(0.99)+self.peakRange,
-            "O+H2": #[0,self.channelSize]
-            np.append(self.calculator.cal_pixel(16) + self.peakRange, self.calculator.cal_pixel(2) + self.peakRange),
-            "O-H2": #[0,self.channelSize]
-            np.append(np.append(self.calculator.cal_pixel(16) + self.peakRange, self.calculator.cal_pixel(2) + self.peakRange), 0),
-        }
-        self.spectraBottleD = {}
-        self.fftSD = {}
-        self.stftSD = {}
-        self.dataD = 0
+        #self.calculator = Calibration_mass(cal_mass, cal_pixel)
+        #self.channelSize = 12032#24000#1536
+        #self.scanLengthD = 3320#1200
+        #self.peakRange = [-100, 100]  # range of the peak
+        #self.delayD = np.arange(self.scanLengthD)/self.scanLengthD*100*2*2*3.33564*10**-15
+        #self.gasBottle = {
+        #    "O+": self.calculator.cal_pixel(16)+self.peakRange,
+        #    "H2+": self.calculator.cal_pixel(2)+self.peakRange,
+        #    "H+": self.calculator.cal_pixel(0.99)+self.peakRange,
+        #    "O+H2": #[0,self.channelSize]
+        #    np.append(self.calculator.cal_pixel(16) + self.peakRange, self.calculator.cal_pixel(2) + self.peakRange),
+        #    "O-H2": #[0,self.channelSize]
+        #    np.append(np.append(self.calculator.cal_pixel(16) + self.peakRange, self.calculator.cal_pixel(2) + self.peakRange), 0),
+        #}
+        #self.spectraBottleD = {}
+        #self.fftSD = {}
+        #self.stftSD = {}
+        #self.dataD = 0
 
         
     def pathFinder(self):
         for fn in self.filename:
             interpath = pl.PureWindowsPath(fn[9:16], fn[9:19])
-            self.filepath = self.filepath + [pl.PureWindowsPath(self.rootPath, interpath, fn + r'.hdf5')]
-            #self.exportPath = pl.PureWindowsPath(self.rootPath, r'plot20220602')
-            #self.exportPath = pl.PureWindowsPath(self.rootPath, interpath, r'processed')
-        #if not os.path.exists(self.exportPath):
-        #    os.mkdir(self.exportPath)
+            self.filepath = self.filepath + [pl.PureWindowsPath(self.rootPath, r'OriginalData', interpath, fn + r'.hdf5')]
 
     def checkData(self):
         #with h5py.File(self.filename, 'r+') as f:
@@ -166,19 +162,25 @@ class FFT_ionS():
                 pass
 
     def read_splitB(self, isCorrection = True, sumN=1):
+        '''
+        For data measured using boxcar.
+        '''
         ChN=self.ChN #number of channels measured
         for fp in self.filepath:
-            self.delayB = np.arange(self.scanLengthB)/self.scanLengthB*100*2*2*3.33564*10**-15/4161.16632*4146.12
+            self.delayB = np.arange(self.scanLengthB)/self.scanLengthB*100*2*2*3.33564*10**-15/4161.16632*4146.12#Change the delay so that the frequency of H2 foundamental vibration is 4146.12.
             if isCorrection:
                 with h5py.File(fp, 'r+') as f:
                     print(f.keys())
                     data = np.array(f['dataB'], dtype=float)
                     print(data.shape)
+                    #sumN: every sumN scans are add together before delay calibration.
+                    #self.ChN: In total the data of 12 analog input channels are saved. Channels 0,2,4,6,8 are data of Mass1, Mass2, Mass16 and Mass17. Channel 10 is the reference data for Mass2.
+                    #Channels 1,3,5,7,9,11 are grounded analog input channels inbetween every two channels for signal from boxcars, used to make sure the sample rate is low enough.
                     m = int(data.shape[0]/self.ChN/sumN)
                     for i in [0,2,4,6,8,10]:
                         self.interSpectraBottleB['Ch'+str(i)] = data[i::ChN][-int(m*sumN):].reshape(m, sumN, data.shape[1]).sum(axis=1)
                     self.interinterSpectraBottleB = {}
-                    num = int(m/59)
+                    num = int(m/59)#every 59*sumN scans are delay-calibrated.
                     for gas in self.interSpectraBottleB.keys():
                         self.interinterSpectraBottleB[gas] = {}
                         self.spectraBottleB[gas] = np.zeros((num, 13000))
@@ -194,6 +196,9 @@ class FFT_ionS():
             save_obj(self.interSpectraBottleB, pl.PureWindowsPath(self.savePath, os.path.split(fp)[1].replace(r'.hdf5','')+r'.pkl'))
 
     def read_splitD(self, overNight = True, firstTry = False, sumNo = 89, usefulRange = [0,2], cu = False):
+        '''
+        For data measured using digitizer.
+        '''
         for fp in self.filepath:
             with h5py.File(fp, 'r+') as f:
                 print(np.array(f['dataD'].shape))
@@ -262,6 +267,9 @@ class FFT_ionS():
 
 
     def mass_spectra(self):
+        '''
+        For data measured using digitizer.
+        '''
         zeroIndex = self.findZeroDelayD()
         zeroIndexS=zeroIndex
         zeroIndexS.sort()
@@ -304,43 +312,7 @@ class FFT_ionS():
         #plt.show()
         return y
 
-    def calDrift(self, _cRange, gas='Ch8'):
-        '''
-        calibrate by time zero
-        '''
-        plt.clf()
-        _iS = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
-        #_iS2 = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
-        for i in range(self.interSpectraBottleB[gas].shape[0]):
-            #_iS2[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (3655.52723-20)/33.35641*1e12, (3655.52723+20)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-        iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS)
-        #iS2 = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS2)
-        _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=20000)
-        indexMax = []
-        for i in range(self.interSpectraBottleB[gas].shape[0]):
-            _inter=iS.ev(i,_delayRange)
-            indexMax = indexMax + [np.argmax(_inter)]
-            #plt.plot(_delayRange,_inter)
-            
-        print(indexMax)
-        #plt.xlabel('Delay (fs)')
-        #plt.ylabel('a.u.')
-        #plt.show()
-        _ref = sum(indexMax[int(self.interSpectraBottleB[gas].shape[0]/2)-5:int(self.interSpectraBottleB[gas].shape[0]/2)+5])/10
-        _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/20000
-        for i in range(self.interSpectraBottleB[gas].shape[0]):
-            _inter=iS.ev(i,_delayRange+_shift[i])
-            #delayRangeA = np.linspace(start=200,stop=1000, num=50000)#Used to compare the zreo delay when calibrating using stretch mode frequency to calibrate
-            #_inter2 = iS2.ev(i,delayRangeA+_shift[i])#
-            #plt.plot(delayRangeA,_inter2)
-            #plt.plot(_delayRange,_inter)
-        #plt.xlabel('Delay (fs)')
-        #plt.ylabel('a.u.')
-        #plt.show()
-        return _shift
-
-    def calDrift2(self, _cRange, gas='Ch0'):
+    def calDrift(self, _cRange, gas='Ch0'):
         '''
         calibrate by drift of the strech mode oscillation
         '''
@@ -363,9 +335,10 @@ class FFT_ionS():
             indexMax = indexMax + [np.argmax(np.abs(_inter))]
             
         print(indexMax)
+        plt.title('Before calibration')
         plt.xlabel('Delay (fs)')
         plt.ylabel('a.u.')
-        plt.show()
+        #plt.show()
         _ref = sum(indexMax[int(self.interSpectraBottleB[gas].shape[0]/2)-5:int(self.interSpectraBottleB[gas].shape[0]/2)+5])/10
         _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/calNum
         for i in range(self.interSpectraBottleB[gas].shape[0]):
@@ -374,13 +347,14 @@ class FFT_ionS():
             #_inter2 = iS2.ev(i,delayRangeA+_shift[i])#
             plt.plot(_delayRange,_inter)
             #plt.plot(delayRangeA,_inter2)
+        plt.title('After calibration')
         plt.xlabel('Delay (fs)')
         plt.ylabel('a.u.')
-        plt.show()
+        #plt.show()
         return _shift
 
-    #def delayCorrection(self, _cRange = [400,405]):
-    def delayCorrection(self, _cRange = [40,90]):
+    #def delayCorrection(self, _cRange = [400,405]):#using frequency of sym.Strech as standard
+    def delayCorrection(self, _cRange = [40,90]):#using auto correlation as standard
         for k in range(self.num):
             for gas in self.interSpectraBottleB.keys():
                 self.interSpectraBottleB[gas] = self.interinterSpectraBottleB[gas][str(k)]
@@ -389,7 +363,7 @@ class FFT_ionS():
                 try:
                     print(_cRange)
                     #_shift = self.calDrift(_cRange = _cRange)
-                    _shift = self.calDrift2(_cRange = _cRange)
+                    _shift = self.calDrift(_cRange = _cRange)
                     break
                 except IndexError:
                     print('Wrong Region! Try again!')
@@ -429,14 +403,15 @@ class FFT_ionS():
                 zeroIndex2 = zeroIndex2 + [_Spec[:500].argmax()]
         return zeroIndex, zeroIndex2
 
-    def show_Spectra(self, shift=0):
+    def show_Spectra(self, ifsaveT = False):
         gs = gridspec.GridSpec(2, 3)
         #gs = gridspec.GridSpec(1, 1)
         fig = plt.figure(figsize=(20,8))
         #ax = fig.add_subplot(111)
-        lab=['Mass1','Mass2','Mass16','Mass17','Mass18','Ch2+Ch4','Mass1+Mass16', 'Mass1+Mass17', 'Mass16+Mass17','Mass17+Mass18']
+        lab=['Mass1','Mass2','Mass16','Mass17','Mass18','ref2']
         i=0
         if ifsaveT:
+            op.set_show(show=True)
             self.wks = op.new_sheet('w',lname=str('Time')+str('_')+self.molecule+str('_')+str('%.1E' % Decimal(self.intensity))+str('_')+self.saveRef)
         for gas in self.spectraBottleB.keys():
             print(gas)
@@ -459,13 +434,15 @@ class FFT_ionS():
             rebindelay = self.rebin_delay
             #else:
             #    delay = self.rebin_delay
-            ax.plot(delay*10**15+shift,
-                     self.spectraBottleB["window_"+gas], label=gas)#/np.amax(self.spectraBottleB[gas])
-            #ax.plot(delay*10**15+shift,
+            ax.plot(delay*10**15 ,
+                     self.spectraBottleB[gas].sum(axis=0), label=gas)#/np.amax(self.spectraBottleB[gas])
+            #ax.plot(delay*10**15 ,
+            #         self.spectraBottleB["window_"+gas], label=gas)#/np.amax(self.spectraBottleB[gas])
+            #ax.plot(delay*10**15 ,
             #         self.spectraBottleB['window_filter_'+gas], label=label)
-            #ax.plot(delay*10**15+shift,
+            #ax.plot(delay*10**15 ,
             #         self.spectraBottleB['window_'+gas], label='window_'+gas)
-            #ax.plot(rebindelay*10**15+shift,
+            #ax.plot(rebindelay*10**15 ,
             #         self.spectraBottleB['rebin_window_'+gas], label='rebin_window_'+gas)
             ax.set_xlabel("Delay/fs")
             ax.set_ylabel('a.u.')
@@ -475,7 +452,7 @@ class FFT_ionS():
             #np.savetxt(pl.PureWindowsPath(self.exportPath, str('delay')+str('%.1E' % Decimal(self.intensity))+str('.dat')), delay*10**15)
             if ifsaveT:
                 self.wks.from_list(0, delay, 'X')
-                self.wks.from_list(i, self.spectraBottleB[gas], lname=gas, axis='Y')
+                self.wks.from_list(i, self.spectraBottleB[gas].sum(axis=0), lname=gas, axis='Y')
         #plt.legend()
         fig.tight_layout()
         #plt.savefig("spectra_31"+d,dpi=720, bbox_inches='tight', pad_inches=0.2)
@@ -688,7 +665,7 @@ if __name__ == '__main__':
     f00 = FFT_ionS(filename=f00, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(260,8,5),ChN=11)#260-250
 
     #ff=[f0,f1,f2]#
-    ff=[38,48,53]#measured in June, best data
+    ff=[f38,f48,f53]#measured in June 2022, best data
     for x in ff:
         x.pathFinder()
         print(x.filepath)
@@ -697,7 +674,7 @@ if __name__ == '__main__':
         #x.window(windowSize=150, direction='left')
         #x.rmvExp()
         #x.smooth(windowSize=9)
-        #x.show_Spectra()
+        x.show_Spectra(ifsaveT = True)#ifsaveT=True will open a Origin window and export the data. Only used
         #plt.show()
         #x.padding(paddingSize=100000)
         #x.FFTS()
