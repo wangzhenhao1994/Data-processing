@@ -108,31 +108,11 @@ class FFT_ionS():
         self.rootPath= pl.PureWindowsPath(r'D:\SF_FFT')
         self.savePath = os.path.join(r'D:\SF_FFT', r'processedData', r'inter', self.molecule, str(self.intensity)+'_'+self.molecule)
 
-        #setting for data from digitizer
-        self.calculator = Calibration_mass(cal_mass, cal_pixel)
-        self.channelSize = 12032#24000#1536
-        self.scanLengthD = 3320#1200
-        self.peakRange = [-100, 100]  # range of the peak
-        self.delayD = np.arange(self.scanLengthD)/self.scanLengthD*100*2*2*3.33564*10**-15#/4161.16632*4155.0587
-        self.gasBottle = {
-            "O+": self.calculator.cal_pixel(16)+self.peakRange,
-            "H2+": self.calculator.cal_pixel(2)+self.peakRange,
-            "H+": self.calculator.cal_pixel(0.99)+self.peakRange,
-            "O+H2": #[0,self.channelSize]
-            np.append(self.calculator.cal_pixel(16) + self.peakRange, self.calculator.cal_pixel(2) + self.peakRange),
-            "O-H2": #[0,self.channelSize]
-            np.append(np.append(self.calculator.cal_pixel(16) + self.peakRange, self.calculator.cal_pixel(2) + self.peakRange), 0),
-        }
-        self.spectraBottleD = {}
-        self.fftSD = {}
-        self.stftSD = {}
-        self.dataD = 0
-
         
     def pathFinder(self):
         for fn in self.filename:
             interpath = pl.PureWindowsPath(fn[9:16], fn[9:19])
-            self.filepath = self.filepath + [pl.PureWindowsPath(self.rootPath, interpath, fn + r'.hdf5')]
+            self.filepath = self.filepath + [pl.PureWindowsPath(self.rootPath,r'OriginalData',interpath, fn + r'.hdf5')]
             #self.exportPath = pl.PureWindowsPath(self.rootPath, r'plot20220602')
             #self.exportPath = pl.PureWindowsPath(self.rootPath, interpath, r'processed')
         #if not os.path.exists(self.exportPath):
@@ -492,12 +472,12 @@ if __name__ == '__main__':
         x.pathFinder()
         print(x.filepath)
         
-        x.read_splitB(isCorrection=True,sumN=1)
+        x.read_splitB(isCorrection=True,sumN=3)
         #x.findZeroDelay()
         #x.window(windowSize=150, direction='left')
         #x.rmvExp()
         #x.smooth(windowSize=9)
-        x.show_Spectra()
+        #x.show_Spectra()
         #plt.show()
         #x.padding(paddingSize=100000)
         #x.FFTS()

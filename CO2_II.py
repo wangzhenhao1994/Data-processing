@@ -27,7 +27,7 @@ from BaselineRemoval import BaselineRemoval
 from lmfit import minimize, Parameters, Parameter, report_fit
 import originpro as op
 
-ifsave = False
+ifsave = True
 ifsaveT = False
 ifsavePhase = False
 if ifsave or ifsaveT or ifsavePhase:
@@ -893,7 +893,7 @@ class FFT_ionS():
             i=i+1
             if ifsave:
                 self.wks.from_list(0, f_window, lname="Frequency", axis='X')
-                self.wks.from_list(i, np.abs(Y_window), lname=label, axis='Y')
+                self.wks.from_list(i, np.abs(Y_window[0]), lname=label, axis='Y')
         #save_obj(self.result, pl.PureWindowsPath(self.savePath, self.folder+'_result'+r'.pkl'))
         #save_obj(self.fftSB, pl.PureWindowsPath(self.savePath, self.folder+'_fftSB'+r'.pkl'))
         fig.tight_layout()
@@ -952,11 +952,11 @@ if __name__ == '__main__':
     #        if os.path.isdir(os.path.join(directory, name))]:
     #    print(ff)
 
-    #for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
+    for ff in [r'Combine_pu1.2E+15pr1.2E+15_CO2']:
     #for ff in [r'pu9.2E+13pr5.3E+14_CO2',r'pu9.2E+13pr9.1E+14_CO2',r'pu9.2E+13pr1.4E+15_CO2']:
     #for ff in [r'pu7.7E+14pr3.7E+14_CO2',r'pu7.7E+14pr6.1E+14_CO2',r'pu7.6E+14pr9.3E+14_CO2',r'pu7.6E+14pr1.4E+15_CO2']:#bending?scan probe intensity
     #for ff in [r'pu4.7E+14pr8.2E+13_CO2',r'pu5.2E+14pr2.6E+14_CO2',r'pu5.2E+14pr4.2E+14_CO2',r'pu5.2E+14pr6.5E+14_CO2',r'pu5.6E+14pr1.0E+15_CO2',r'pu5.4E+14pr1.5E+15_CO2']:#scan probe intensity
-    for ff in [r'pu4.0E+14pr3.8E+14_CO2',r'pu4.0E+14pr6.2E+14_CO2',r'pu4.0E+14pr9.7E+14_CO2']:#,r'pu4.0E+14pr1.4E+15_CO2'
+    #for ff in [r'pu4.0E+14pr3.8E+14_CO2',r'pu4.0E+14pr6.2E+14_CO2',r'pu4.0E+14pr9.7E+14_CO2']:#,r'pu4.0E+14pr1.4E+15_CO2'
         d = FFT_ionS(ff)
         if d.checkSavedData():
             d.read()
