@@ -513,7 +513,7 @@ class FFT_ionS():
     def show_FFT(self, ifsaveFFT=False, ifsaveT=False):
         self.interfftSB = load_obj(os.path.abspath(os.path.join(d.savePath, 'False'+str(self.folder)+r'fftSB.pkl')))
         self.dcRange=0
-        fig, ax = plt.subplots(nrows=5, ncols=1, sharex=True, sharey=True,figsize=(10,10))
+        fig, ax = plt.subplots(nrows=6, ncols=1, sharex=True, sharey=True,figsize=(10,10))
         fig.add_subplot(111, frameon=False)
         plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
         plt.xlabel("Frequency ($\mathrm{cm^{-1}}$)")
@@ -524,7 +524,7 @@ class FFT_ionS():
             axPP = axPP + [axx.twinx()]
         axPP[0].get_shared_y_axes().join(axPP[0], axPP[1],axPP[2])
 
-        lab=['Mass 18','Mass 1','Mass 2','Mass 16','Mass 17']
+        lab=['Mass 18','Mass 1','Mass 2','Mass 16','Mass 17','ref Mass2']
         i=0
         if ifsaveFFT:
             op.set_show(show=True)
@@ -540,10 +540,10 @@ class FFT_ionS():
 
         boxcarA={}
         boxcarA['Ch0'],boxcarA['Ch2'],boxcarA['Ch4'],boxcarA['Ch6'],boxcarA['Ch8'] = [1,0.01,0.01,1,5]
-        for gas in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
+        for gas in ['Ch8','Ch0','Ch2','Ch4','Ch6','Ch10']:
             if 'filter' in gas  or 'window' in gas or 'rebin' in gas or 'com' in gas:
                 continue
-            elif gas not in ['Ch8','Ch0','Ch2','Ch4','Ch6']:
+            elif gas not in ['Ch8','Ch0','Ch2','Ch4','Ch6','Ch10']:
                 continue
             
             axF=ax[i]
@@ -576,7 +576,7 @@ class FFT_ionS():
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
             aa = len(f_window[(f_window<100)])
-            bb=len(f_window[(f_window<15000)])
+            bb=len(f_window[(f_window<50000)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
@@ -674,8 +674,8 @@ class FFT_ionS():
             if gas == 'Ch8':
                 pass
             else:
-                pass
-                #axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r',linewidth=2,label='Phase')
+                #pass
+                axP.errorbar(f_window,P_window[0],yerr=P_window[1], color='r', ecolor='r',linewidth=2,label='Phase')
                 #axP.axhline(y=0.5, color='b', linestyle='--', label='Phase_aid')
                 #axP.axhline(y=1.5, color='b', linestyle='--')
             #plot(f_window,P_window,'r')
@@ -1444,10 +1444,9 @@ if __name__ == '__main__':
         d.cal_ratio()
         print(d.ratio)
         d.findZeroDelay3()
-        #d.show_Spectra(ifsaveT=False)
+        d.show_Spectra(ifsaveT=False)
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
-        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
-        
+        d.FFT3(windowSize=500, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=False,test = False)
         d.show_FFT(ifsaveFFT=False,ifsaveT=False)
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat

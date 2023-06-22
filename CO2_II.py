@@ -831,7 +831,7 @@ class FFT_ionS():
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
             aa = len(f_window[(f_window<100)])
-            bb=len(f_window[(f_window<15000)])
+            bb=len(f_window[(f_window<50000)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
@@ -964,7 +964,7 @@ if __name__ == '__main__':
         d.transition()
         d.findZeroDelay3()
         #d.show_Spectra()
-        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
+        d.FFT3(windowSize=10, delayRange=False, rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=False,test = False)
         d.show_FFT()
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat
