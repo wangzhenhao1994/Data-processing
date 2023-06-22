@@ -272,7 +272,8 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            data=sps.savgol_filter(data, window_length=10, polyorder=1,deriv=1,delta=10, mode='nearest')
+            #data=sps.savgol_filter(data, window_length=10, polyorder=2,deriv=1,delta=1, mode='nearest')
+            data = np.convolve(data, np.ones(10)/10, mode='valid')
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -533,8 +534,8 @@ class FFT_ionS():
             label=lab[i]
             f_window = self.fftSB[_preP+'fre']
             Y = np.array([np.mean(self.fftSB[_preP+gas+'_fft'],axis=0), np.std(self.fftSB[_preP+gas+'_fft'],axis=0)])
-            Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
-            #Y_window = np.array([np.abs(np.mean(self.fftSB[_preP+gas+'_fft'],axis=0)),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
+            #Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
+            Y_window = np.array([np.abs(np.mean(self.fftSB[_preP+gas+'_fft'],axis=0)),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
@@ -554,14 +555,14 @@ class FFT_ionS():
             
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
-            #aa = len(f_window[(f_window<200)])
-            #bb=len(f_window[(f_window<50000)])
-            #f_window = f_window[aa:bb]
-            #Y = Y[:,aa:bb]
-            #Y_window = Y_window[:,aa:bb]
-            #Y_window_im = Y_window_im[:,aa:bb]
-            #Y_window_re = Y_window_re[:,aa:bb]
-            #P_window = P_window[:,aa:bb]
+            aa = len(f_window[(f_window<50)])
+            bb=len(f_window[(f_window<50000)])
+            f_window = f_window[aa:bb]
+            Y = Y[:,aa:bb]
+            Y_window = Y_window[:,aa:bb]
+            Y_window_im = Y_window_im[:,aa:bb]
+            Y_window_re = Y_window_re[:,aa:bb]
+            P_window = P_window[:,aa:bb]
             P_window[0]=np.where(P_window[0]<-np.pi-1,P_window[0]+2*np.pi,P_window[0])
             P_window[0]=np.where(P_window[0]>np.pi-2,P_window[0]-2*np.pi,P_window[0])
             P_window = P_window/np.pi
@@ -582,9 +583,9 @@ class FFT_ionS():
             inter = 0
             for w in omega:
                 inter = inter + np.where(np.abs(f_window-w)<20,P_window,0)
-            omegab=[9000,12800,21800]
+            omegab=[8000]
             for w in omegab:
-                inter = inter + np.where(np.abs(f_window-w)<2000,P_window,0)
+                inter = inter + np.where(f_window-w>0,P_window,0)
             inter = np.where(inter==0,np.inf,inter)
             P_window = inter
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
@@ -711,7 +712,7 @@ class FFT_ionS():
         plt.show()
         return _shift
     
-    def calDrift2(self, _cRange, gas='Ch8'):
+    def calDrift2(self, _cRange, gas='Ch2'):
         '''
         calibrate by drift of the strech mode oscillation
         '''
@@ -719,26 +720,29 @@ class FFT_ionS():
         _iS = np.array(np.zeros(self.specBigBottleB[gas].shape))
         #_iS2 = np.array(np.zeros(self.specBigBottleB[gas].shape))
         for i in range(self.specBigBottleB[gas].shape[0]):
-            _iS[i]=self.butter_bandpass_filter(self.specBigBottleB[gas][i], (4161.07887-200)/33.35641*1e12, (4161.07887+200)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-            #_iS[i]=self.butter_bandpass_filter(self.specBigBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/self.stepSize)
+            #_iS[i]=self.butter_bandpass_filter(self.specBigBottleB[gas][i], (4161.07887-200)/33.35641*1e12, (4161.07887+200)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB['Ch2'][i]-self.interSpectraBottleB['Ch0'][i], 50/33.35641*1e12, 3000/33.35641*1e12, 1/self.stepSize)
             #_iS2[i]=self.butter_bandpass_filter(self.specBigBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
         iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS)
         #iS2 = sp.interpolate.RectBivariateSpline(range(_iS2.shape[0]), self.delayB*1e15, _iS2)
-        _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=20000)
+        _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=10000)
         indexMax = []
         for i in range(self.specBigBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange)
-            #plt.plot(_delayRange,_inter)
+            plt.plot(_delayRange,_inter)
             #indexMax = indexMax + [sps.argrelextrema(_inter, np.greater)[0][-1]]
-            indexMax = indexMax + [np.argmax(np.abs(_inter))]
+            ref1=np.argmax(np.abs(_inter))
+            aveRange=50
+            ref2=np.dot(_inter[ref1-aveRange:ref1+aveRange],np.arange(-aveRange,aveRange,1))/np.sum(_inter[ref1-aveRange:ref1+aveRange])
+            indexMax = indexMax + [int(ref1+ref2)]
             
         print(indexMax)
-        #plt.xlabel('Delay (fs)')
-        #plt.ylabel('a.u.')
-        #plt.show()
+        plt.xlabel('Delay (fs)')
+        plt.ylabel('a.u.')
+        plt.show()
         #_ref = sum(indexMax[int(self.specBigBottleB[gas].shape[0]/2)-5:int(self.specBigBottleB[gas].shape[0]/2)+5])/10
         _ref =indexMax[int(self.specBigBottleB[gas].shape[0]/2)]
-        _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/20000
+        _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/10000
         for i in range(self.specBigBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange+_shift[i])
             #delayRangeA = np.linspace(start=50,stop=100, num=2000)#Used to compare the zreo delay when calibrating using stretch mode frequency to calibrate
@@ -750,8 +754,8 @@ class FFT_ionS():
         #plt.show()
         return _shift
 
-    def delayCorrection(self, _cRange = [400,404]):
-    #def delayCorrection(self, _cRange = [30,90]):
+    #def delayCorrection(self, _cRange = [400,404]):
+    def delayCorrection(self, _cRange = [0,100]):
     #def delayCorrection(self, _cRange = [900,1300]):
         xxx = 0
         while True:
@@ -890,5 +894,5 @@ if __name__ == '__main__':
         d.findZeroDelay3()
         #d.show_Spectra(ifsaveT=False)
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
-        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=False,test = False)
+        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
         d.show_FFT(ifsaveFFT=False,ifsaveT=False)
