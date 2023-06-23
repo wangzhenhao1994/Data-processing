@@ -27,11 +27,11 @@ from cal_intensity import cal_intensity
 from calculate_k_b import Calibration_mass
 
 import originpro as op
-#ifsave = True
-#ifsaveT = False
-#ifsavePhase = False
-#if ifsave or ifsaveT or ifsavePhase:
-#    op.set_show(show=True)
+ifsave = False
+ifsaveT = False
+ifsavePhase = False
+if ifsave or ifsaveT or ifsavePhase:
+    op.set_show(show=True)
 
 
 my_path = os.path.abspath(__file__)
@@ -155,13 +155,13 @@ class FFT_ionS():
                     for i in [0,2,4,6,8,10]:
                         self.interSpectraBottleB['Ch'+str(i)] = data[i::ChN][-int(m*sumN):].reshape(m, sumN, data.shape[1]).sum(axis=1)
                     self.interinterSpectraBottleB = {}
-                    num = int(m/59)
+                    num = int(m/4)
                     for gas in self.interSpectraBottleB.keys():
                         self.interinterSpectraBottleB[gas] = {}
-                        self.spectraBottleB[gas] = np.zeros((num*59, 13000))
+                        self.spectraBottleB[gas] = np.zeros((num, 13000))
                     for i in range(num):
                         for gas in self.interSpectraBottleB.keys():
-                            _inter = self.interSpectraBottleB[gas][i*59:(i+1)*59]
+                            _inter = self.interSpectraBottleB[gas][i*4:(i+1)*4]
                             self.interinterSpectraBottleB[gas][str(i)] = _inter 
             self.num = num
             self.delayCorrection()
@@ -325,9 +325,9 @@ class FFT_ionS():
         _iS = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
         _iS2 = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
         for i in range(self.interSpectraBottleB[gas].shape[0]):
-            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (50)/33.35641*1e12, (4500)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (10)/33.35641*1e12, (5000)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
             #_iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (4161.07887-200)/33.35641*1e12, (4161.07887+200)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-            _iS2[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 50/33.35641*1e12, 4500/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            _iS2[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
         iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS)
         iS2 = sp.interpolate.RectBivariateSpline(range(_iS2.shape[0]), self.delayB*1e15, _iS2)
         _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=2000)
@@ -335,42 +335,46 @@ class FFT_ionS():
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange)
             plt.plot(_delayRange,_inter)
-            indexMax = indexMax + [sps.argrelextrema(_inter, np.greater)[0][-1]]
+            #indexMax = indexMax + [sps.argrelextrema(_inter, np.greater)[0][-1]]
+            ref1=np.argmax(np.abs(_inter))
+            aveRange=100
+            ref2=np.dot(_inter[ref1-aveRange:ref1+aveRange],np.arange(-aveRange,aveRange,1))/np.sum(_inter[ref1-aveRange:ref1+aveRange])
+            indexMax = indexMax + [int(ref1+ref2)]
             
         print(indexMax)
         plt.xlabel('Delay (fs)')
         plt.ylabel('a.u.')
-        plt.show()
+        #plt.show()
         _ref = sum(indexMax[int(self.interSpectraBottleB[gas].shape[0]/2)-5:int(self.interSpectraBottleB[gas].shape[0]/2)+5])/10
         _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/2000
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange+_shift[i])
-            delayRangeA = np.linspace(start=50,stop=100, num=2000)#Used to compare the zreo delay when calibrating using stretch mode frequency to calibrate
+            delayRangeA = np.linspace(start=400,stop=500, num=2000)#Used to compare the zreo delay when calibrating using stretch mode frequency to calibrate
             _inter2 = iS2.ev(i,delayRangeA+_shift[i])#
             #plt.plot(_delayRange,_inter)
             plt.plot(delayRangeA,_inter2)
         plt.xlabel('Delay (fs)')
         plt.ylabel('a.u.')
-        plt.show()
+        #plt.show()
         return _shift
     
     def calDrift3(self, _cRange, gas='Ch0'):
         '''
-        calibrate by maximum of autocorrelation
+        calibrate by drift of the strech mode oscillation
         '''
-        #op.set_show(show=True)
+        op.set_show(show=True)
         plt.clf()
         _iS = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
         _iS2 = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
         for i in range(self.interSpectraBottleB[gas].shape[0]):
-            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB['Ch2'][i]-self.interSpectraBottleB['Ch0'][i], 100/33.35641*1e12, 3000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 500/33.35641*1e12, 5000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
             #_iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (4161.07887-200)/33.35641*1e12, (4161.07887+200)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
             #_iS2[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
         iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS)
         #iS2 = sp.interpolate.RectBivariateSpline(range(_iS2.shape[0]), self.delayB*1e15, _iS2)
-        _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=10000)
+        _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=2000)
         indexMax = []
-        #self.wks = op.new_sheet('w',lname='original'+str('_')+str(self.printNum))
+        self.wks = op.new_sheet('w',lname='original'+str('_')+str(self.printNum))
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange)
             plt.plot(_delayRange,_inter)
@@ -380,17 +384,15 @@ class FFT_ionS():
             ref2=np.dot(_inter[ref1-aveRange:ref1+aveRange],np.arange(-aveRange,aveRange,1))/np.sum(_inter[ref1-aveRange:ref1+aveRange])
             indexMax = indexMax + [int(ref1+ref2)]
             
-            #self.wks.from_list(0, _delayRange, 'X')
-            #self.wks.from_list(i+1, _inter, lname=str(i+1), axis='Y')
+            self.wks.from_list(0, _delayRange, 'X')
+            self.wks.from_list(i+1, _inter, lname=str(i+1), axis='Y')
         print(indexMax)
-                        
-
         plt.xlabel('Delay (fs)')
         plt.ylabel('a.u.')
         plt.show()
         _ref = sum(indexMax[int(self.interSpectraBottleB[gas].shape[0]/2)-5:int(self.interSpectraBottleB[gas].shape[0]/2)+5])/10
-        _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/10000
-        #self.wks = op.new_sheet('w',lname='calibrated'+str('_')+str(self.printNum))
+        _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/2000
+        self.wks = op.new_sheet('w',lname='calibrated'+str('_')+str(self.printNum))
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange+_shift[i])
             #delayRangeA = np.linspace(start=50,stop=100, num=2000)#Used to compare the zreo delay when calibrating using stretch mode frequency to calibrate
@@ -398,15 +400,16 @@ class FFT_ionS():
             plt.plot(_delayRange,_inter)
             #plt.plot(delayRangeA,_inter2)
             
-            #self.wks.from_list(0, _delayRange, 'X')
-            #self.wks.from_list(i+1, _inter, lname=str(i+1), axis='Y')
+            self.wks.from_list(0, _delayRange, 'X')
+            self.wks.from_list(i+1, _inter, lname=str(i+1), axis='Y')
         plt.xlabel('Delay (fs)')
         plt.ylabel('a.u.')
         plt.show()
         return _shift
 
     #def delayCorrection(self, _cRange = [400,404]):
-    def delayCorrection(self, _cRange = [0,100]):
+    def delayCorrection(self, _cRange = [20,100]):
+        print('self.num is'+str(self.num)+'!/n')
         for k in range(self.num):
             for gas in self.interSpectraBottleB.keys():
                 self.interSpectraBottleB[gas] = self.interinterSpectraBottleB[gas][str(k)]
@@ -415,7 +418,7 @@ class FFT_ionS():
                 try:
                     print(_cRange)
                     #_shift = self.calDrift(_cRange = _cRange)
-                    _shift = self.calDrift3(_cRange = _cRange)
+                    _shift = self.calDrift2(_cRange = _cRange)
                     break
                 except IndexError:
                     print('Wrong Region! Try again!')
@@ -430,8 +433,11 @@ class FFT_ionS():
                 iS = sp.interpolate.RectBivariateSpline(range(self.interSpectraBottleB[gas].shape[0]), self.delayB*1e15, self.interSpectraBottleB[gas])
                 inter = 0
                 for i in range(self.interSpectraBottleB[gas].shape[0]):
-                    #inter = inter + iS.ev(i, _delayRange+_shift[i])
-                    self.spectraBottleB[gas][i+k*self.interSpectraBottleB[gas].shape[0]] = iS.ev(i, _delayRange+_shift[i])
+                    inter = inter + iS.ev(i, _delayRange+_shift[i])
+                if gas == 'Ch2':
+                    print(sum(inter))
+                self.spectraBottleB[gas][k] = inter
+
         self.delayB = _delayRange * 1e-15
         self.interSpectraBottleB = self.spectraBottleB.copy()
 
