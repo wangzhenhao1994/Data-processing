@@ -191,36 +191,37 @@ X.V = X.Vmorse(X.r)
 fig, ax = plt.subplots(figsize=(6, 8))
 X.plot_V(ax, color='k')
 
-X.draw_Elines(range(2), ax)
+X.draw_Elines(range(1), ax)
 X.draw_Elines(X.get_vmax(), ax, linestyles='--', linewidths=1)
 #X.plot_psi([0, 1], ax, scaling=0.5, color=COLOUR1)
 #X.label_levels([0, 1], ax)
 
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
+ax.set_ylim([-0.5,18])
 
-# Atom masses and equilibrium bond length for (1H)(35Cl).
-mA, mB = 1., 1.
-X_re = 1.052E-10
-X_Te = 124418
-X_we, X_wexe = 2321.7, 66.2
-
-X = Morse(mA, mB, X_we, X_wexe, X_re, X_Te)
-X.make_rgrid()
-X.V = X.Vmorse(X.r)
-
-X.plot_V(ax, color='k')
-
-X.draw_Elines(range(11), ax)
-X.draw_Elines(X.get_vmax(), ax, linestyles='--', linewidths=1)
-#X.plot_psi([0, 10], ax, scaling=0.5, color=COLOUR1)
-#X.label_levels([0, 10], ax)
-
-ax.set_xlabel(r'$\mathrm{Internuclear\ distance}\ (\mathrm{\AA}$)')
-ax.set_ylabel(r'Energy (eV)')
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
+## Atom masses and equilibrium bond length for (1H)(35Cl).
+#mA, mB = 1., 1.
+#X_re = 1.052E-10
+#X_Te = 124418
+#X_we, X_wexe = 2321.7, 66.2
+#
+#X = Morse(mA, mB, X_we, X_wexe, X_re, X_Te)
+#X.make_rgrid()
+#X.V = X.Vmorse(X.r)
+#
+#X.plot_V(ax, color='k')
+#
+#X.draw_Elines(range(11), ax)
+#X.draw_Elines(X.get_vmax(), ax, linestyles='--', linewidths=1)
+##X.plot_psi([0, 10], ax, scaling=0.5, color=COLOUR1)
+##X.label_levels([0, 10], ax)
+#
+#ax.set_xlabel(r'$\mathrm{Internuclear\ distance}\ (\mathrm{\AA}$)')
+#ax.set_ylabel(r'Energy (eV)')
+#ax.spines['top'].set_visible(False)
+#ax.spines['right'].set_visible(False)
 
 plt.xlim([0, 3])
-plt.savefig('morse-psi.png',dpi=300,transparent=True)
+plt.savefig('morse-psi2.png',dpi=300,transparent=True)
 plt.show()

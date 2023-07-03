@@ -155,13 +155,13 @@ class FFT_ionS():
                     for i in [0,2,4,6,8,10]:
                         self.interSpectraBottleB['Ch'+str(i)] = data[i::ChN][-int(m*sumN):].reshape(m, sumN, data.shape[1]).sum(axis=1)
                     self.interinterSpectraBottleB = {}
-                    num = int(m/4)
+                    num = int(m/25)
                     for gas in self.interSpectraBottleB.keys():
                         self.interinterSpectraBottleB[gas] = {}
                         self.spectraBottleB[gas] = np.zeros((num, 13000))
                     for i in range(num):
                         for gas in self.interSpectraBottleB.keys():
-                            _inter = self.interSpectraBottleB[gas][i*4:(i+1)*4]
+                            _inter = self.interSpectraBottleB[gas][i*25:(i+1)*25]
                             self.interinterSpectraBottleB[gas][str(i)] = _inter 
             self.num = num
             self.delayCorrection()

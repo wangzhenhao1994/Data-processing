@@ -26,7 +26,7 @@ from calculate_k_b import Calibration_mass
 from BaselineRemoval import BaselineRemoval
 from lmfit import minimize, Parameters, Parameter, report_fit
 import originpro as op
-
+from skimage.restoration import denoise_wavelet
 ifsave = False
 ifsaveT = False
 ifsavePhase = False
@@ -197,7 +197,7 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            data=sps.savgol_filter(data, window_length=10, polyorder=1,deriv=1,delta=10, mode='interp')
+            data=denoise_wavelet(data, sigma=0.2, wavelet='sym3', wavelet_levels=None)
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -810,8 +810,14 @@ class FFT_ionS():
                 P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             else:
                 P_inter = P_inter-P_ref
-                #for n in range(np.shape(P_inter)[0]):
-                #    P_inter[n]=np.where(P_inter[n]>2*np.pi-2, P_inter[n]-2*np.pi, P_inter[n])
+                for iii in range(6):
+                    P_inter.sort(axis=0)
+                    P_inter2=P_inter.copy()
+                    P_inter3=P_inter.copy()
+                    P_inter2[-1]=P_inter2[-1]-2*np.pi
+                    P_inter3[0]=P_inter3[0]+2*np.pi
+                    P_inter[-1]=np.where(np.std(P_inter,axis=0)<np.std(P_inter2,axis=0),P_inter[-1],P_inter2[-1])
+                    P_inter[0]=np.where(np.std(P_inter,axis=0)<np.std(P_inter3,axis=0),P_inter[0],P_inter3[0])
 
                 P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
 
@@ -819,7 +825,7 @@ class FFT_ionS():
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
             aa = len(f_window[(f_window<100)])
-            bb=len(f_window[(f_window<43000)])
+            bb=len(f_window[(f_window<4000)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]

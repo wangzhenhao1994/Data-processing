@@ -32,7 +32,7 @@ from calculate_k_b import Calibration_mass
 from BaselineRemoval import BaselineRemoval
 from lmfit import minimize, Parameters, Parameter, report_fit
 import originpro as op
-
+from skimage.restoration import denoise_wavelet
 import math
 
 my_path = os.path.abspath(__file__)
@@ -294,7 +294,8 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            data=sps.savgol_filter(data, window_length=10, polyorder=1,deriv=1,delta=10, mode='nearest')
+            #data=sps.savgol_filter(data, window_length=10, polyorder=1,deriv=1,delta=10, mode='nearest')
+            data=denoise_wavelet(data, sigma=1, wavelet='sym5', wavelet_levels=None)
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -566,8 +567,14 @@ class FFT_ionS():
                 P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             else:
                 P_inter = P_inter-P_ref
-                for n in range(np.shape(P_inter)[0]):
-                    P_inter[n]=np.where(P_inter[n]>2*np.pi-2, P_inter[n]-2*np.pi, P_inter[n])
+                for iii in range(6):
+                    P_inter.sort(axis=0)
+                    P_inter2=P_inter.copy()
+                    P_inter3=P_inter.copy()
+                    P_inter2[-1]=P_inter2[-1]-2*np.pi
+                    P_inter3[0]=P_inter3[0]+2*np.pi
+                    P_inter[-1]=np.where(np.std(P_inter,axis=0)<np.std(P_inter2,axis=0),P_inter[-1],P_inter2[-1])
+                    P_inter[0]=np.where(np.std(P_inter,axis=0)<np.std(P_inter3,axis=0),P_inter[0],P_inter3[0])
 
                 #P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
                 P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+0)])
@@ -1446,7 +1453,7 @@ if __name__ == '__main__':
         d.findZeroDelay3()
         d.show_Spectra(ifsaveT=False)
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
-        d.FFT3(windowSize=500, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=False,test = False)
+        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
         d.show_FFT(ifsaveFFT=False,ifsaveT=False)
         #mdic = {"Ch8": d.specBigBottleB['Ch8'], "Ch0": d.specBigBottleB['Ch0'],"label": "experiment"}
         #from scipy.io import savemat

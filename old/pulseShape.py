@@ -14,10 +14,13 @@ plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 x=np.arange(-15,45,0.01)
+x2=np.arange(-15,15,0.01)
 sigma = 8/2/np.sqrt(2*np.log(2))
 y=np.exp(-x*x/2/sigma/sigma)*np.cos(x/5*np.pi*2)+np.exp(-(x-30)*(x-30)/2/sigma/sigma)*np.cos((x-30)/5*np.pi*2)
+y2=np.exp(-x2*x2/2/sigma/sigma)
 ax = plt.subplot(111)
-ax.plot(x,y,color = 'r',linewidth=10.0)
+ax.plot(x,y,color = 'r',linewidth=3.0)
+ax.plot(x2,y2,'k--',linewidth=1.0)
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 ax.spines['left'].set_visible(False)

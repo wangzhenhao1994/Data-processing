@@ -28,7 +28,7 @@ from calculate_k_b import Calibration_mass
 from BaselineRemoval import BaselineRemoval
 from lmfit import minimize, Parameters, Parameter, report_fit
 import originpro as op
-
+from skimage.restoration import denoise_wavelet
 import math
 
 my_path = os.path.abspath(__file__)
@@ -270,8 +270,10 @@ class FFT_ionS():
         windowSize = int(windowSize*1e-15/self.stepSize)
         self.windowSize = windowSize
         if smooth:
-            #data=sps.savgol_filter(data, window_length=10, polyorder=2,deriv=1,delta=1, mode='nearest')
-            data = np.convolve(data, np.ones(10)/10, mode='valid')
+            #data=sps.savgol_filter(data, window_length=10, polyorder=3,deriv=1,delta=3, mode='nearest')
+            #data=self.butter_bandpass_filter(data, 10/33.35641*1e12, 6000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            #data = np.convolve(data, np.ones(10)/10, mode='full')
+            data=denoise_wavelet(data, sigma=0.5, wavelet='sym3', wavelet_levels=None)
         if direction == 'left':
             window = data[-(__len-windowSize):]
             delay = delay[-(__len-windowSize):]
@@ -532,8 +534,8 @@ class FFT_ionS():
             label=lab[i]
             f_window = self.fftSB[_preP+'fre']
             Y = np.array([np.mean(self.fftSB[_preP+gas+'_fft'],axis=0), np.std(self.fftSB[_preP+gas+'_fft'],axis=0)])
-            Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
-            #Y_window = np.array([np.abs(np.mean(self.fftSB[_preP+gas+'_fft'],axis=0)),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
+            #Y_window = np.array([np.mean(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
+            Y_window = np.array([np.abs(np.mean(self.fftSB[_preP+gas+'_fft'],axis=0)),     np.std(np.abs(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window=np.where(f_window>=100,Y_window,0)/np.amax(Y_window)
             Y_window_im = np.array([np.mean(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.imag(self.fftSB[_preP+gas+'_fft']),axis=0)])
             Y_window_re = np.array([np.mean(np.real(self.fftSB[_preP+gas+'_fft']),axis=0),   np.std(np.real(self.fftSB[_preP+gas+'_fft']),axis=0)])
@@ -544,17 +546,21 @@ class FFT_ionS():
                 P_window =  np.array([np.mean(P_inter,axis=0), np.std(P_inter,axis=0)])
             else:
                 P_inter = P_inter-P_ref
-                for n in range(np.shape(P_inter)[0]):
-                    P_inter[n]=np.where(P_inter[n]>2*np.pi-2, P_inter[n]-2*np.pi, P_inter[n])
-
+                for iii in range(6):
+                    P_inter.sort(axis=0)
+                    P_inter2=P_inter.copy()
+                    P_inter3=P_inter.copy()
+                    P_inter2[-1]=P_inter2[-1]-2*np.pi
+                    P_inter3[0]=P_inter3[0]+2*np.pi
+                    P_inter[-1]=np.where(np.std(P_inter,axis=0)<np.std(P_inter2,axis=0),P_inter[-1],P_inter2[-1])
+                    P_inter[0]=np.where(np.std(P_inter,axis=0)<np.std(P_inter3,axis=0),P_inter[0],P_inter3[0])
                 #P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+np.std(P_ref,axis=0)**2)])
                 P_window =  np.array([np.mean(P_inter,axis=0), np.sqrt(np.std(P_inter,axis=0)**2+0)])
-                print(P_window[1])
 
             #aa = len(f_window[(f_window<100)])
             #bb=len(f_window[(f_window<4000)])
             aa = len(f_window[(f_window<50)])
-            bb=len(f_window[(f_window<50000)])
+            bb=len(f_window[(f_window<42000)])
             f_window = f_window[aa:bb]
             Y = Y[:,aa:bb]
             Y_window = Y_window[:,aa:bb]
@@ -566,7 +572,9 @@ class FFT_ionS():
             P_window = P_window/np.pi
             self.result['frequency'] = f_window
             self.result['phase'][gas] = P_window
-            omega = [588,815,1376.54213,1475.23277,1586.74037,1703.37476,1818.72746,1937.92524,2053.27793,3068,3297.80532,3524.66561,3759.21609,4160.38712,5117.6,4715,4435.9,5467.7]
+            omega = [356,588,815,1255,1376.54213,1475.23277,1586.74037,1703.37476,1818.72746,1937.92524,2053.27793,2191,3068,3297.80532,3524.66561,3759.21609,4160.38712,5117.6,4715,4435.9,5467.7]
+            #omega2 = [16691,25014,37545]
+            #omega = omega+omega2
             for om in omega:
                 if i>0:
                     axF.axvline(x=om,ymin=0,ymax=1.3,clip_on=False,c='k',linestyle='--',alpha=0.3)
@@ -581,12 +589,13 @@ class FFT_ionS():
             inter = 0
             for w in omega:
                 inter = inter + np.where(np.abs(f_window-w)<20,P_window,0)
-            #omegab=[8000]
-            #for w in omegab:
-            #    inter = inter + np.where(f_window-w>0,P_window,0)
+            omegab=[9000,12600,29000]
+            for w in omegab:
+                inter = inter + np.where(np.abs(f_window-w)<800,P_window,0)
             inter = np.where(inter==0,np.inf,inter)
+            P_window=inter
             #fitRes = self.fit_phase(f_window,Y[0]/np.amax(np.abs(Y[0])),[3655.52723])
-            axF.plot(f_window, self.baseLineRemove(Y_window[0]/np.amax(Y_window[0])), 'k', clip_on=True, label=label)
+            axF.plot(f_window, Y_window[0]/np.amax(Y_window[0]), 'k', clip_on=True, label=label)#self.baseLineRemove(Y_window[0]/np.amax(Y_window[0]))
             self.result['amplitude'][gas] = self.baseLineRemove(Y_window[0]/np.amax(Y_window[0]))
             #axF.plot(f_window, Y_window_re[0]/(np.amax(Y_window_re[0])-np.amin(Y_window_re[0])), label=label+'_re')
             #axF.plot(f_window, Y_window_im[0]/(np.amax(Y_window_im[0])-np.amin(Y_window_im[0])), label=label+'_im')
@@ -605,7 +614,7 @@ class FFT_ionS():
             #axF.set_xlim([200,4500])
             axP.set_yticks([-1,-0.5,0,0.5,1])
             axP.grid(visible=True,linestyle='--',linewidth='0.3',c='b')
-            axP.set_ylim([-1.3,1.3])
+            axP.set_ylim([-2,2])#axP.set_ylim([-1.3,1.3])
             axP.legend(loc=(0.02,0.6),ncol=2,fontsize=10)
             #axF.set_yscale('log')
             #axF.set_ylim([10**-2.5,10**0])
@@ -878,7 +887,6 @@ class FFT_ionS():
         ratio=int(ratio*10)/10
         print(ratio)
 
-
 if __name__ == '__main__':
     for ff in [r'3.6E+14_H2',r'6.0E+14_H2',r'8.0E+14_H2']:#r'3.6E+14_H2',r'6.0E+14_H2',r'8.0E+14_H2'True
         d = FFT_ionS(ff)
@@ -889,7 +897,7 @@ if __name__ == '__main__':
         d.cal_ratio()
         print(d.ratio)
         d.findZeroDelay3()
-        #d.show_Spectra(ifsaveT=False)
+        d.show_Spectra(ifsaveT=False)
         #d.FFT3(windowSize=100, delayRange=[300*1E-15,1000*1E-15], rebinF=1,paddingF = 5, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
-        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=True, smooth=True,test = False)
+        d.FFT3(windowSize=90, delayRange=False, rebinF=1,paddingF = 10, useWindow=True, zeroDirection='left', phaseCompensate=False, smooth=True,test = False)
         d.show_FFT(ifsaveFFT=False,ifsaveT=False)

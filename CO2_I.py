@@ -227,36 +227,39 @@ class FFT_ionS():
         #plt.show()
         return y
 
-    def calDrift(self, _cRange):
+    def calDrift(self, _cRange,gas='Ch8'):
         plt.clf()
-        _iS = np.array(np.zeros(self.interSpectraBottleB['Ch0'].shape))
-        sumSpec=_iS
-        for gas in self.interSpectraBottleB.keys():
-            sumSpec=sumSpec+self.interSpectraBottleB[gas]
+        _iS = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
+        #sumSpec=_iS
+        #for gas in self.interSpectraBottleB.keys():
+        #    sumSpec=sumSpec+self.interSpectraBottleB[gas]
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             print(i)
             #_iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (1389.15-10)/33.35641*1e12, (1389.15+10)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-            _iS[i]=self.butter_bandpass_filter(sumSpec[i], 500/33.35641*1e12, 2000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 1000/33.35641*1e12, 5000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
         iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS)
         _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=20000)
         indexMax = []
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange)
-            indexMax = indexMax + [np.argmax(np.abs(_inter))]
-            #plt.plot(_delayRange,_inter)
+            ref1=np.argmax(np.abs(_inter))
+            aveRange=100
+            ref2=np.dot(_inter[ref1-aveRange:ref1+aveRange],np.arange(-aveRange,aveRange,1))/np.sum(_inter[ref1-aveRange:ref1+aveRange])
+            indexMax = indexMax + [int(ref1+ref2)]
+            plt.plot(_delayRange,_inter)
         
         print(indexMax)
         #plt.xlabel('Delay (fs)')
         #plt.ylabel('a.u.')
-        #plt.show()
+        plt.show()
         _ref = sum(indexMax[int(self.interSpectraBottleB[gas].shape[0]/2)-5:int(self.interSpectraBottleB[gas].shape[0]/2)+5])/10
         _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/20000
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange+_shift[i])
-            #plt.plot(_delayRange,_inter)
+            plt.plot(_delayRange,_inter)
         #plt.xlabel('Delay (fs)')
         #plt.ylabel('a.u.')
-        #plt.show()
+        plt.show()
         return _shift
 
     def delayCorrection(self, _cRange = [0,150]):
@@ -454,7 +457,7 @@ if __name__ == '__main__':
         x.pathFinder()
         print(x.filepath)
         
-        x.read_splitB(isCorrection=True,sumN=5)
+        x.read_splitB(isCorrection=True,sumN=3)
         if x.num==0:
             continue
         #x.findZeroDelay()
