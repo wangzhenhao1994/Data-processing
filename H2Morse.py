@@ -4,10 +4,15 @@ from scipy.special import factorial
 from scipy.special import genlaguerre, gamma
 from matplotlib import rc
 import matplotlib.pyplot as plt
+from simulation.shrodinger_1D.classes.class_secant import Secant_Method
+from simulation.shrodinger_1D.classes.class_numerov import Numerov_Method
+from simulation.shrodinger_1D.classes.class_simpson import Simpson_Method
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern'], 'size': 14})
 rc('text', usetex=True)
 # Factor for conversion from cm-1 to J
 FAC = 100 * h * c
+#Factor for conversion from W/cm2 to V/m
+43416586692.18
 
 class Morse:
     """A class representing the Morse oscillator model of a diatomic."""
@@ -38,7 +43,7 @@ class Morse:
         self.vmax = int(np.floor(self.lam - 0.5))
 
         self.make_rgrid()
-        self.V = self.Vmorse(self.r)
+        #self.V = self.Vmorse(self.r)
 
     def make_rgrid(self, n=1000, rmin=None, rmax=None, retstep=False):
         """Make a suitable grid of internuclear separations."""
@@ -69,15 +74,16 @@ class Morse:
         return (self.we * np.sqrt(2 * self.mu/self.De) * np.pi *
                 c * 100)
 
-    def Vmorse(self, r):
+    def Vmorse(self, r, F):
         """Calculate the Morse potential, V(r).
 
         Returns the Morse potential at r (in m) for parameters De
         (in J), a (in m-1) and re (in m).
 
         """
+        
 
-        return self.De * (1 - np.exp(-self.a*(r - self.re)))**2
+        return self.De * (1 - np.exp(-self.a*(r - self.re)))**2-1.602176634E-19*5.143E11*F*(self.r-self.r[0])*6.24181E+18*FAC/0.00012
 
     def Emorse(self, v):
         """Calculate the energy of a Morse oscillator in state v.
@@ -170,7 +176,7 @@ class Morse:
             else:
                 x = r_plot
             psi = self.calc_psi(v, r=x, psi_max=self.we/2)
-            psi_plot = psi*scaling + self.Emorse(v)/FAC + self.Te
+            psi_plot = psi*scaling*0.00012 + self.Emorse(v)/FAC*0.00012 + self.Te*0.00012
             ax.plot(x*1.e10, psi_plot, **kwargs)
 
 
@@ -186,42 +192,47 @@ X_we, X_wexe = 4401.213, 121.336
 
 X = Morse(mA, mB, X_we, X_wexe, X_re, X_Te)
 X.make_rgrid()
-X.V = X.Vmorse(X.r)
+X.V = X.Vmorse(X.r,0.0)
 
 fig, ax = plt.subplots(figsize=(6, 8))
 X.plot_V(ax, color='k')
+#X.V = X.Vmorse(X.r,0.05)
+#X.plot_V(ax, color='r')
+#X.V = X.Vmorse(X.r,0.1)
+#X.plot_V(ax, color='r')
 
-X.draw_Elines(range(1), ax)
+X.draw_Elines(range(2), ax)
 X.draw_Elines(X.get_vmax(), ax, linestyles='--', linewidths=1)
-#X.plot_psi([0, 1], ax, scaling=0.5, color=COLOUR1)
-#X.label_levels([0, 1], ax)
+#X.plot_psi([0, 0], ax, scaling=0.5, color=COLOUR1)
+#X.label_levels([0, 0], ax)
 
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-ax.set_ylim([-0.5,18])
+#ax.set_ylim([-1,7])
 
-## Atom masses and equilibrium bond length for (1H)(35Cl).
-#mA, mB = 1., 1.
-#X_re = 1.052E-10
-#X_Te = 124418
-#X_we, X_wexe = 2321.7, 66.2
+# Atom masses and equilibrium bond length for (1H)(35Cl).
+mA, mB = 1., 1.
+X_re = 1.052E-10
+X_Te = 124418
+X_we, X_wexe = 2321.7, 66.2
+
+X = Morse(mA, mB, X_we, X_wexe, X_re, X_Te)
+X.make_rgrid()
+X.V = X.Vmorse(X.r,F=0)
+
+X.plot_V(ax, color='k')
+
+X.draw_Elines(range(11), ax)
+X.draw_Elines(X.get_vmax(), ax, linestyles='--', linewidths=1)
+#X.plot_psi([0, 10], ax, scaling=0.5, color=COLOUR1)
+#X.label_levels([0, 10], ax)
 #
-#X = Morse(mA, mB, X_we, X_wexe, X_re, X_Te)
-#X.make_rgrid()
-#X.V = X.Vmorse(X.r)
-#
-#X.plot_V(ax, color='k')
-#
-#X.draw_Elines(range(11), ax)
-#X.draw_Elines(X.get_vmax(), ax, linestyles='--', linewidths=1)
-##X.plot_psi([0, 10], ax, scaling=0.5, color=COLOUR1)
-##X.label_levels([0, 10], ax)
-#
-#ax.set_xlabel(r'$\mathrm{Internuclear\ distance}\ (\mathrm{\AA}$)')
-#ax.set_ylabel(r'Energy (eV)')
-#ax.spines['top'].set_visible(False)
-#ax.spines['right'].set_visible(False)
+ax.set_xlabel(r'$\mathrm{Internuclear\ distance \ R}\ (\mathrm{\AA}$)')
+ax.set_ylabel(r'Energy (eV)')
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
 
 plt.xlim([0, 3])
-plt.savefig('morse-psi2.png',dpi=300,transparent=True)
+plt.tight_layout()
+plt.savefig('morse-psi.png',dpi=300,transparent=True)
 plt.show()
