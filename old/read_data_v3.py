@@ -481,11 +481,11 @@ class FFTOSC(FFT_ionS):
 if __name__ == '__main__':
     
     dataPath = pl.PureWindowsPath(
-        r'C:\Users\user\Desktop\Data_newTOF\2021-09\2021-09-10')
+        r'D:\SF_FFT\OriginalData\2021-09\2021-09-10')
     dataPath1 = pl.PureWindowsPath(
-        r'C:\Users\user\Desktop\Data_newTOF\2021-09\2021-09-11')
+        r'D:\SF_FFT\OriginalData\2021-09\2021-09-11')
     dataPath3 = pl.PureWindowsPath(
-        r'C:\Users\user\Desktop\Data_newTOF\2021-09\2021-09-09')
+        r'D:\SF_FFT\OriginalData\2021-09\2021-09-09')
     datafile1 =  os.path.join(dataPath1, r'scan_tof_2021-09-11-17-49-19.hdf5')#130-160
     datafile =  os.path.join(dataPath, r'scan_tof_2021-09-10-17-37-00.hdf5')#160-120
     datafile2 =  os.path.join(dataPath1, r'scan_tof_2021-09-11-14-34-38.hdf5')#110-160

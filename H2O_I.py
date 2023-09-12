@@ -372,7 +372,7 @@ class FFT_ionS():
                     _cRange = np.array(_cRange)+0.5
                     xxx = xxx+1
             #############################################################
-            _delayRange = np.linspace(start=0,stop=1300, num=13000)# New delay!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            _delayRange = np.linspace(start=0,stop=12999, num=13000)# New delay!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ###############################################################
             for gas in self.interSpectraBottleB.keys():
                 iS = sp.interpolate.RectBivariateSpline(range(self.interSpectraBottleB[gas].shape[0]), self.delayB*1e15, self.interSpectraBottleB[gas])
@@ -674,7 +674,7 @@ if __name__ == '__main__':
         #x.window(windowSize=150, direction='left')
         #x.rmvExp()
         #x.smooth(windowSize=9)
-        x.show_Spectra(ifsaveT = True)#ifsaveT=True will open a Origin window and export the data. Only used
+        #x.show_Spectra(ifsaveT = False)#ifsaveT=True will open a Origin window and export the data. Only used
         #plt.show()
         #x.padding(paddingSize=100000)
         #x.FFTS()

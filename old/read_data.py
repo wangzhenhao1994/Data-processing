@@ -51,7 +51,7 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 class FFT_ionS():
 
     #def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[17,18], cal_pixel=[50,62]):
-    def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[17,18], cal_pixel=[401,484]):
+    def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[1,18], cal_pixel=[730,9399]):
     #def __init__(self, filename, massRange=[5, 50], dcRange=2, cal_mass=[17,18], cal_pixel=[197,279]):
         '''
 
@@ -83,7 +83,7 @@ class FFT_ionS():
             #"CH3+":self.calculator.cal_pixel(15) +self.peakRange,
             # "N": self.calculator.cal_pixel(14) +self.peakRange,
             # "O": self.calculator.cal_pixel(16)+self.peakRange,
-            "H2O+": self.calculator.cal_pixel(18)+self.peakRange,
+            "H2O++": self.calculator.cal_pixel(9)+self.peakRange,
             # "N2": self.calculator.cal_pixel(28)+self.peakRange,
             # "$O_2$": self.calculator.cal_pixel(32)+self.peakRange,
             # "N": self.calculator.cal_pixel(14) +self .peakRange,
@@ -157,7 +157,7 @@ class FFT_ionS():
                     try:
                         f.create_dataset(s, data=data, compression="gzip") #create dataset 'sum'
                         print('Dataset \''+ s +'\' is created!')
-                    except RuntimeError:
+                    except ValueError:
                         print('Dataset \''+ s +'\''+' already exists!')
                         try:
                             interData = f[s]  # load and overwrite the data
@@ -179,7 +179,7 @@ class FFT_ionS():
                     print(useful_description)
                     f.create_dataset('useful_description', data=useful_description) #create dataset 'sum'
                     print('Dataset \''+ 'useful' +'\' is created!')
-                except RuntimeError:
+                except ValueError:
                     print('Dataset \''+ 'useful' +'\''+' already exists!')
                     if cu:
                         print('Begin to overwrite dataset \''+ 'useful' +'\''+'!')
@@ -466,7 +466,7 @@ if __name__ == '__main__':
         dataPath = r'/mnt/c/Users/user/Desktop/Data_newTOF'
         dataPath = pl.PurePath(dataPath)
     else:
-        dataPath = r'D:\DataProcessing'
+        dataPath = r'D:\SF_FFT\OriginalData'
         dataPath = pl.PureWindowsPath(dataPath)
     yearAndMonth = r'2022-07'
     
@@ -609,8 +609,8 @@ if __name__ == '__main__':
         #plt.plot(x.spec[0],label=str(0))
         #plt.legend()
         #plt.show()
-        plt.plot(np.arange(x.data.shape[0]),np.sum(x.data,1))
-        #plt.plot(cal.pixel2mass(np.arange(sum.shape[0])),np.sum(sum[:,int(140/660*sum.shape[1]):],1),label='Mass[100,600]')
+        #plt.plot(np.arange(x.data.shape[0]),np.sum(x.data,1))
+        plt.plot(x.calculator.pixel2mass(np.arange(x.data.shape[0])),np.sum(x.data[:,int(140/660*x.data.shape[1]):],1),label='Mass[100,600]')
         #plt.plot(np.arange(sum.shape[0]),np.sum(sum[:,int(140/660*sum.shape[1]):],1),label='Mass[100,600]')
         plt.legend()
         plt.show()
