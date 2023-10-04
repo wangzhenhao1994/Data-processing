@@ -167,7 +167,8 @@ class FFT_ionS():
         '''
         ChN=self.ChN #number of channels measured
         for fp in self.filepath:
-            self.delayB = np.arange(self.scanLengthB)/self.scanLengthB*100*2*2*3.33564*10**-15/4161.16632*4146.12#Change the delay so that the frequency of H2 foundamental vibration is 4146.12.
+            self.delayB = np.arange(self.scanLengthB)/self.scanLengthB*100*2*2*3.33564/4161.16632*4146.12#Change the delay so that the frequency of H2 foundamental vibration is 4146.12.
+            self.stepSize = np.mean(self.delayB[1:]-self.delayB[:-1])
             if isCorrection:
                 with h5py.File(fp, 'r+') as f:
                     print(f.keys())
@@ -180,16 +181,16 @@ class FFT_ionS():
                     for i in [0,2,4,6,8,10]:
                         self.interSpectraBottleB['Ch'+str(i)] = data[i::ChN][-int(m*sumN):].reshape(m, sumN, data.shape[1]).sum(axis=1)
                     self.interinterSpectraBottleB = {}
-                    num = int(m/59)#every 59*sumN scans are delay-calibrated.
+                    num = int(m/10)#every 59*sumN scans are delay-calibrated.
                     for gas in self.interSpectraBottleB.keys():
                         self.interinterSpectraBottleB[gas] = {}
                         self.spectraBottleB[gas] = np.zeros((num, 13000))
                     for i in range(num):
                         for gas in self.interSpectraBottleB.keys():
-                            _inter = self.interSpectraBottleB[gas][i*59:(i+1)*59]
+                            _inter = self.interSpectraBottleB[gas][i*10:(i+1)*10]
                             self.interinterSpectraBottleB[gas][str(i)] = _inter 
             self.num = num
-            self.delayCorrection()
+            self.delayCorrection(file=os.path.split(fp)[1])
             if not os.path.exists(self.savePath):
                 os.mkdir(self.savePath)
             print(self.interSpectraBottleB['Ch0'].shape)
@@ -312,34 +313,37 @@ class FFT_ionS():
         #plt.show()
         return y
 
-    def calDrift(self, _cRange, gas='Ch0'):
+    def calDrift(self, file, _cRange, gas='Ch0'):
         '''
         calibrate by drift of the strech mode oscillation
         '''
         plt.clf()
         calNum = 20000
+        standard = 0
+        standard = self.interSpectraBottleB['Ch8']-self.interSpectraBottleB['Ch0']#-self.interSpectraBottleB['Ch6']
         _iS = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
         #_iS2 = np.array(np.zeros(self.interSpectraBottleB[gas].shape))
         for i in range(self.interSpectraBottleB[gas].shape[0]):
-            #_iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (3655.52723-20)/33.35641*1e12, (3655.52723+20)/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-            _iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-            #_iS2[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
-        iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB*1e15, _iS)
-        #iS2 = sp.interpolate.RectBivariateSpline(range(_iS2.shape[0]), self.delayB*1e15, _iS2)
+            #_iS[i]=self.butter_bandpass_filter(standard[i], (3655.52723-40)/33.35641*1e12, (3655.52723+40)/33.35641*1e12, 1/self.stepSize*1e15)
+            #_iS[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], (3655.52723-30)/33.35641*1e12, (3655.52723+30)/33.35641*1e12, 1/self.stepSize*1e15)
+            _iS[i]=self.butter_bandpass_filter(standard[i], 100/33.35641*1e12, 1500/33.35641*1e12, 1/self.stepSize*1e15)
+            #_iS2[i]=self.butter_bandpass_filter(self.interSpectraBottleB[gas][i], 100/33.35641*1e12, 4000/33.35641*1e12, 1/self.stepSize)
+        iS = sp.interpolate.RectBivariateSpline(range(_iS.shape[0]), self.delayB, _iS)
+        #iS2 = sp.interpolate.RectBivariateSpline(range(_iS2.shape[0]), self.delayB, _iS2)
         _delayRange = np.linspace(start=_cRange[0],stop=_cRange[1], num=calNum)
         indexMax = []
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange)
-            plt.plot(_delayRange,_inter)
+            #plt.plot(_delayRange,_inter)
             #indexMax = indexMax + [sps.argrelextrema(_inter, np.greater)[0][-1]]
             indexMax = indexMax + [np.argmax(np.abs(_inter))]
             
         print(indexMax)
-        plt.title('Before calibration')
-        plt.xlabel('Delay (fs)')
-        plt.ylabel('a.u.')
+        #plt.title('Before calibration')
+        #plt.xlabel('Delay (fs)')
+        #plt.ylabel('a.u.')
         #plt.show()
-        _ref = sum(indexMax[int(self.interSpectraBottleB[gas].shape[0]/2)-5:int(self.interSpectraBottleB[gas].shape[0]/2)+5])/10
+        _ref = np.mean(indexMax)
         _shift = (np.array(indexMax)-_ref)*(_cRange[1]-_cRange[0])/calNum
         for i in range(self.interSpectraBottleB[gas].shape[0]):
             _inter=iS.ev(i,_delayRange+_shift[i])
@@ -350,11 +354,12 @@ class FFT_ionS():
         plt.title('After calibration')
         plt.xlabel('Delay (fs)')
         plt.ylabel('a.u.')
+        plt.savefig(pl.PureWindowsPath(self.savePath, os.path.split(file)[1].replace(r'.hdf5','')+r'.png'))
         #plt.show()
         return _shift
 
-    #def delayCorrection(self, _cRange = [400,405]):#using frequency of sym.Strech as standard
-    def delayCorrection(self, _cRange = [40,90]):#using auto correlation as standard
+    #def delayCorrection(self, file, _cRange = [300,307]):#using frequency of sym.Strech as standard
+    def delayCorrection(self, file, _cRange = [1,150]):#using auto correlation as standard
         for k in range(self.num):
             for gas in self.interSpectraBottleB.keys():
                 self.interSpectraBottleB[gas] = self.interinterSpectraBottleB[gas][str(k)]
@@ -363,7 +368,7 @@ class FFT_ionS():
                 try:
                     print(_cRange)
                     #_shift = self.calDrift(_cRange = _cRange)
-                    _shift = self.calDrift(_cRange = _cRange)
+                    _shift = self.calDrift(file=file, _cRange = _cRange)
                     break
                 except IndexError:
                     print('Wrong Region! Try again!')
@@ -372,17 +377,17 @@ class FFT_ionS():
                     _cRange = np.array(_cRange)+0.5
                     xxx = xxx+1
             #############################################################
-            _delayRange = np.linspace(start=0,stop=12999, num=13000)# New delay!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            _delayRange,self.stepSize = np.linspace(start=0,stop=1300, num=13000,endpoint=False,retstep=True)# New delay!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ###############################################################
             for gas in self.interSpectraBottleB.keys():
-                iS = sp.interpolate.RectBivariateSpline(range(self.interSpectraBottleB[gas].shape[0]), self.delayB*1e15, self.interSpectraBottleB[gas])
+                iS = sp.interpolate.RectBivariateSpline(range(self.interSpectraBottleB[gas].shape[0]), self.delayB, self.interSpectraBottleB[gas])
                 inter = 0
                 for i in range(self.interSpectraBottleB[gas].shape[0]):
                     inter = inter + iS.ev(i, _delayRange+_shift[i])
                 if gas == 'Ch8':
                     print(sum(inter))
                 self.spectraBottleB[gas][k] = inter
-        self.delayB = _delayRange * 1e-15
+        self.delayB = _delayRange
         self.interSpectraBottleB = self.spectraBottleB.copy()
 
     def findZeroDelay(self):
@@ -392,7 +397,7 @@ class FFT_ionS():
             if gas not in ['Ch0', 'Ch2', 'Ch4', 'Ch6', 'Ch8', 'Ch10']:
                 continue
             _Spec = self.interSpectraBottleB[gas]
-            _Spec=self.butter_bandpass_filter(_Spec, 1/33.35641*1e12, 150/33.35641*1e12, 1/(self.delayB[1]-self.delayB[0]))
+            _Spec=self.butter_bandpass_filter(_Spec, 1/33.35641*1e12, 150/33.35641*1e12, 1/self.stepSize)
             #plt.plot(_Spec)
             #plt.show()
             if gas in ['Ch0', 'Ch2', 'Ch4', 'Ch6']:
@@ -471,14 +476,14 @@ if __name__ == '__main__':
     #f8=[r'scan_tof_2022-05-26-14-13-58']
     #f9=[r'scan_tof_2022-05-26-15-46-15']
     #f10=[r'scan_tof_2022-05-26-17-00-01',r'scan_tof_2022-05-26-22-52-13']
-    #f11=[r'scan_tof_2022-05-26-18-50-20']
+    f11=[r'scan_tof_2022-05-26-18-50-20']
     #f12=[]
     #f13=[r'scan_tof_2022-05-27-10-23-47']
     #f14=[r'scan_tof_2022-05-27-11-54-12',r'scan_tof_2022-05-27-19-53-05']
-    #f15=[r'scan_tof_2022-05-27-13-12-13']
+    f15=[r'scan_tof_2022-05-27-13-12-13']
     #f16=[r'scan_tof_2022-05-27-15-11-46']
     #f17=[r'scan_tof_2022-05-27-16-32-58']
-    #f18=[r'scan_tof_2022-05-27-18-03-09']
+    f18=[r'scan_tof_2022-05-27-18-03-09']
 #
     ##since 20220530
     #
@@ -497,7 +502,7 @@ if __name__ == '__main__':
     #f31 = [r'scan_tof_2022-05-31-17-51-43']
     #f32 = [r'scan_tof_2022-05-31-19-41-25']
     ##1st June, today the fiber output is a little bit less, and the data also shows lower intensity though try to set as same parameter as last round.
-    #f33 = [r'scan_tof_2022-06-01-10-40-05']
+    f33 = [r'scan_tof_2022-06-01-10-40-05']
     #f34 = [r'scan_tof_2022-06-01-12-10-05']
     #f35 = [r'scan_tof_2022-06-01-13-39-07']
     #f36 = [r'scan_tof_2022-06-01-15-20-40']
@@ -595,14 +600,14 @@ if __name__ == '__main__':
     #f6 = FFT_ionS(filename=f6, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(250,8.2,5),ChN=11)
     #f16 = FFT_ionS(filename=f16, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(200,8.2,5),ChN=11)
     #f17 = FFT_ionS(filename=f17, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(150,8.2,5),ChN=11)#repeat
-    #f18 = FFT_ionS(filename=f18, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11)
+    f18 = FFT_ionS(filename=f18, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11)
 #
 #
     ##probe 150 mW
     #f7 = FFT_ionS(filename=f7, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(250,8.2,5),ChN=11)
     #f13 = FFT_ionS(filename=f13, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(200,8.2,5),ChN=11)
     #f14 = FFT_ionS(filename=f14, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(150,11.5,5),ChN=11)#repeat
-    #f15 = FFT_ionS(filename=f15, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11)
+    f15 = FFT_ionS(filename=f15, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11)
     #
     #f34 = FFT_ionS(filename=f34, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(250,8.2,5),ChN=11)
     #f35 = FFT_ionS(filename=f35, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(200,9.8,5),ChN=11)#repeat 20220601 actual intensity seems lower due to longer pulse
@@ -615,14 +620,14 @@ if __name__ == '__main__':
     #f8 = FFT_ionS(filename=f8, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(250,8.2,5),ChN=11)#repeat
     #f9 = FFT_ionS(filename=f9, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(200,8.2,5),ChN=11)#interesting, multi fre in H2+ 
     #f10 = FFT_ionS(filename=f10, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(150,8.2,5),ChN=11)#Mass2 and Mass 16 exactly anti phase
-    #f11 = FFT_ionS(filename=f11, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11)
+    f11 = FFT_ionS(filename=f11, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11)
     #f12 = FFT_ionS(filename=f12, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(150,8.2,5),ChN=11)
     
     #f29 = FFT_ionS(filename=f29, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(250,8.2,5),ChN=11) #MCP 3600
     #f30 = FFT_ionS(filename=f30, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(250,8.2,5),ChN=11) #MCP 3800
     #f31 = FFT_ionS(filename=f31, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(200,8.2,5),ChN=11)
     #f32 = FFT_ionS(filename=f32, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(150,8.2,5),ChN=11) #3-hour measurement
-    #f33 = FFT_ionS(filename=f33, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11) #repeat 20220601
+    f33 = FFT_ionS(filename=f33, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(100,8.2,5),ChN=11) #repeat 20220601
 #
     ##probe 200mW
     #f23 = FFT_ionS(filename=f23, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(250,8.5,5),ChN=11)
@@ -664,12 +669,12 @@ if __name__ == '__main__':
     ####################################################################################################################
     f00 = FFT_ionS(filename=f00, scanTime=10, sampRate=300, molecule='H2O', intensity=cal_intensity(260,8,5),ChN=11)#260-250
 
-    #ff=[f0,f1,f2]#
-    ff=[f38,f48,f53]#measured in June 2022, best data
+    #ff=[f18+f15+f11+f33]#
+    ff=[f38,f53,f48]#measured in June 2022, best data f38,f53,
     for x in ff:
         x.pathFinder()
         print(x.filepath)
-        x.read_splitB(isCorrection=True,sumN=3)
+        x.read_splitB(isCorrection=True,sumN=5)
         #x.findZeroDelay()
         #x.window(windowSize=150, direction='left')
         #x.rmvExp()

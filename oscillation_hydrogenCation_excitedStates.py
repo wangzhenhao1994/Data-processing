@@ -13,12 +13,17 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-t=np.arange(0,1300,0.001)
-omega = [526.94738,811.57589,884.65618,1343.65171,1597.50957,1697.51418,2155.22759,2328.3125,2678.32864,3212.96868,3656.57888,1146.2067]
-amplitude=[0.5,1,3,7,9,8,3,1,2,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,]
-y=0
+t=np.arange(0,15,0.001)
+omega = 3656.57888
+#amplitude=[1]
 i=0
-for w in omega:
-    y = y+ np. np.cos(t/33356.40952*w*2*np.pi)*amplitude[i]
-plt.plot(t,y)
+
+y = 1.5+np.sin(t/33356.40952*omega*2*np.pi)#*amplitude[i]
+y2 = 1.5+np.sin(t/33356.40952*omega*2*np.pi+np.pi/2)
+y3 = 1.5+np.sin(t/33356.40952*omega*2*np.pi-np.pi/2)
+plt.plot(t,y,'r',label=r'$\phi=0$')
+plt.plot(t,y2,'b',label=r'$\phi=\pi/2$')
+plt.plot(t,y3,'g',label=r'$\phi=-\pi/2$')
+plt.title(r'Ion yield = Sin($\omega t+\phi$)')
+plt.legend()
 plt.show()
